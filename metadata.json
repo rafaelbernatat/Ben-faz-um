@@ -1,0 +1,5 @@
+{
+  "name": "Planejador de Eventos",
+  "description": "Ferramenta centralizada para organização de festas e eventos, com controle financeiro, lista de convidados e tarefas.",
+  "requestFramePermissions": []
+}
