@@ -1,5 +1,5 @@
 import React from 'react';
-import { ViewState } from '../types';
+import { ViewState } from '../types.ts';
 import { LayoutDashboard, Wallet, Users, Store, Settings } from 'lucide-react';
 
 interface BottomNavProps {

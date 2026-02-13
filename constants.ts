@@ -1,4 +1,4 @@
-import { AppData, RSVPStatus } from './types';
+import { AppData, RSVPStatus } from './types.ts';
 
 export const DEFAULT_DATA: AppData = {
   details: {
@@ -60,23 +60,8 @@ export const DEFAULT_DATA: AppData = {
           notes: 'Preço bom, mas não tem garçom. Precisa contratar à parte.'
         }
       ]
-    },
-    {
-      id: 'vs-2',
-      name: 'Fotografia',
-      selectedOptionId: undefined, // Nenhum selecionado ainda
-      options: [
-        {
-          id: 'vo-3',
-          name: 'Foto Kids',
-          contact: '@fotokids',
-          quote: 800,
-          rating: 4,
-          notes: 'Álbum digital incluso.'
-        }
-      ]
     }
   ]
 };
 
-export const STORAGE_KEY = 'eventPlannerData_v2'; // Bumped version due to schema change
+export const STORAGE_KEY = 'eventPlannerData_v2';

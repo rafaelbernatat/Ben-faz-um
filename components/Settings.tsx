@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppData } from '../types';
+import { AppData } from '../types.ts';
 import { 
   Cloud, CheckCircle, Smartphone, Users, 
   Info, AlertTriangle, Github, Send, Lock, ExternalLink 

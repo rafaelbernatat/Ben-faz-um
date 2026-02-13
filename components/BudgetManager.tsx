@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppData, Category, Task } from '../types';
+import { AppData, Category, Task } from '../types.ts';
 import { Trash2, Plus, ChevronDown, ChevronUp, CheckSquare, Square } from 'lucide-react';
 
 interface BudgetManagerProps {

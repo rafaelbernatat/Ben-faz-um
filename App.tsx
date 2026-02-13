@@ -1,15 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppData, ViewState } from './types';
-import { DEFAULT_DATA, STORAGE_KEY } from './constants';
-import Dashboard from './components/Dashboard';
-import BudgetManager from './components/BudgetManager';
-import GuestList from './components/GuestList';
-import VendorList from './components/VendorList';
-import Settings from './components/Settings';
-import BottomNav from './components/BottomNav';
+import { AppData, ViewState } from './types.ts';
+import { DEFAULT_DATA, STORAGE_KEY } from './constants.ts';
+import Dashboard from './components/Dashboard.tsx';
+import BudgetManager from './components/BudgetManager.tsx';
+import GuestList from './components/GuestList.tsx';
+import VendorList from './components/VendorList.tsx';
+import Settings from './components/Settings.tsx';
+import BottomNav from './components/BottomNav.tsx';
 
 const App: React.FC = () => {
-  // A URL do seu Firebase agora é o padrão global do app
   const FIREBASE_URL = 'https://ben-faz-1-default-rtdb.firebaseio.com/eventData.json';
   
   const [data, setData] = useState<AppData>(DEFAULT_DATA);
@@ -25,7 +24,6 @@ const App: React.FC = () => {
     dataRef.current = data;
   }, [data]);
 
-  // 1. Carga Inicial (Sempre tenta a nuvem primeiro para pegar dados da esposa)
   useEffect(() => {
     const initData = async () => {
       setSyncStatus('fetching');
@@ -37,7 +35,6 @@ const App: React.FC = () => {
             setData(remoteData);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteData));
           } else {
-            // Se a nuvem estiver vazia, tenta o local
             const saved = localStorage.getItem(STORAGE_KEY);
             if (saved) setData(JSON.parse(saved));
           }
@@ -54,7 +51,6 @@ const App: React.FC = () => {
     initData();
   }, []);
 
-  // 2. Auto-Save Debounced (Salva 2s após a última edição)
   useEffect(() => {
     if (isInitialMount.current) return;
 
@@ -75,12 +71,9 @@ const App: React.FC = () => {
     return () => clearTimeout(timer);
   }, [data]);
 
-  // 3. Verificação em Segundo Plano (Poll) a cada 10s
   useEffect(() => {
     const interval = setInterval(async () => {
-      // Se você está editando agora, não busca nada para não travar sua digitação
       if (Date.now() - lastChangeTime.current < 5000) return;
-
       try {
         const response = await fetch(FIREBASE_URL);
         if (response.ok) {
@@ -92,7 +85,6 @@ const App: React.FC = () => {
         }
       } catch (e) {}
     }, 10000);
-
     return () => clearInterval(interval);
   }, []);
 
@@ -111,12 +103,10 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
-      {/* Barra de Progresso de Sync */}
       <div className="h-1 w-full bg-slate-100 fixed top-0 z-[60] overflow-hidden">
         {syncStatus === 'saving' && <div className="h-full bg-brand-500 animate-pulse w-full"></div>}
         {syncStatus === 'fetching' && <div className="h-full bg-green-500 animate-[loading_1s_infinite] w-1/3"></div>}
       </div>
-      
       <main className="max-w-md mx-auto min-h-screen relative px-4 pt-6 pb-32">
         {currentView === 'dashboard' && <Dashboard data={data} />}
         {currentView === 'budget' && <BudgetManager data={data} onUpdate={updateData} />}
@@ -124,9 +114,7 @@ const App: React.FC = () => {
         {currentView === 'vendors' && <VendorList data={data} onUpdate={updateData} />}
         {currentView === 'settings' && <Settings data={data} onUpdate={updateData} />}
       </main>
-
       <BottomNav currentView={currentView} setView={setCurrentView} />
-
       <style>{`
         @keyframes loading {
           0% { transform: translateX(-100%); }
