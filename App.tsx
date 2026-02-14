@@ -1,21 +1,35 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { AppData, ViewState } from './types';
-import { DEFAULT_DATA, STORAGE_KEY } from './constants';
-import Dashboard from './components/Dashboard';
-import BudgetManager from './components/BudgetManager';
-import GuestList from './components/GuestList';
-import VendorList from './components/VendorList';
-import Settings from './components/Settings';
-import BottomNav from './components/BottomNav';
+import React, { useState, useEffect, useRef } from "react";
+import { AppData, ViewState } from "./types";
+import { DEFAULT_DATA, STORAGE_KEY } from "./constants";
+import Dashboard from "./components/Dashboard";
+import BudgetManager from "./components/BudgetManager";
+import GuestList from "./components/GuestList";
+import VendorList from "./components/VendorList";
+import Settings from "./components/Settings";
+import BottomNav from "./components/BottomNav";
 
-const FIREBASE_URL = 'https://ben-faz-1-default-rtdb.firebaseio.com/eventData.json';
+const FIREBASE_URL =
+  "https://ben-faz-1-default-rtdb.firebaseio.com/eventData.json";
+const THEME_STORAGE_KEY = "theme_mode";
+type ThemeMode = "light" | "dark";
 
 const App: React.FC = () => {
   const [data, setData] = useState<AppData>(DEFAULT_DATA);
-  const [currentView, setCurrentView] = useState<ViewState>('dashboard');
+  const [currentView, setCurrentView] = useState<ViewState>("dashboard");
   const [loading, setLoading] = useState(true);
-  const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'fetching'>('idle');
-  
+  const [syncStatus, setSyncStatus] = useState<"idle" | "saving" | "fetching">(
+    "idle",
+  );
+  const [theme, setTheme] = useState<ThemeMode>(() => {
+    const savedTheme = localStorage.getItem(
+      THEME_STORAGE_KEY,
+    ) as ThemeMode | null;
+    if (savedTheme === "light" || savedTheme === "dark") return savedTheme;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  });
+
   const isInitialMount = useRef(true);
 
   // Inicialização
@@ -27,11 +41,13 @@ const App: React.FC = () => {
         try {
           setData(JSON.parse(saved));
           setLoading(false);
-        } catch (e) { console.error("Erro no cache", e); }
+        } catch (e) {
+          console.error("Erro no cache", e);
+        }
       }
 
       // 2. Buscar da Nuvem em Background
-      setSyncStatus('fetching');
+      setSyncStatus("fetching");
       try {
         const res = await fetch(FIREBASE_URL);
         if (res.ok) {
@@ -45,7 +61,7 @@ const App: React.FC = () => {
         console.warn("Offline ou Erro Firebase");
       } finally {
         setLoading(false);
-        setSyncStatus('idle');
+        setSyncStatus("idle");
         isInitialMount.current = false;
       }
     };
@@ -57,49 +73,115 @@ const App: React.FC = () => {
     if (isInitialMount.current || loading) return;
 
     const timer = setTimeout(async () => {
-      setSyncStatus('saving');
+      setSyncStatus("saving");
       try {
         await fetch(FIREBASE_URL, {
-          method: 'PUT',
-          body: JSON.stringify(data)
+          method: "PUT",
+          body: JSON.stringify(data),
         });
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       } catch (e) {
         console.error("Erro ao salvar remoto");
       } finally {
-        setSyncStatus('idle');
+        setSyncStatus("idle");
       }
     }, 2000);
 
     return () => clearTimeout(timer);
   }, [data]);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("dark", theme === "dark");
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeMeta) {
+      themeMeta.setAttribute(
+        "content",
+        theme === "dark" ? "#0f172a" : "#0ea5e9",
+      );
+    }
+  }, [theme]);
+
   const updateData = (newData: AppData) => setData(newData);
 
-  if (loading) return (
-    <div className="h-screen w-full flex items-center justify-center bg-slate-50">
-      <div className="text-center">
-        <div className="w-10 h-10 border-4 border-slate-200 border-t-brand-600 rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-slate-400 text-sm font-medium">Sincronizando...</p>
+  const balloons = [
+    { left: "6%", delay: "-9s", duration: "17s", color: "#f472b6", size: 36 },
+    { left: "18%", delay: "-4s", duration: "19s", color: "#38bdf8", size: 32 },
+    { left: "32%", delay: "-13s", duration: "21s", color: "#f59e0b", size: 34 },
+    { left: "48%", delay: "-7s", duration: "18s", color: "#a78bfa", size: 38 },
+    { left: "64%", delay: "-11s", duration: "20s", color: "#22c55e", size: 33 },
+    { left: "78%", delay: "-15s", duration: "22s", color: "#fb7185", size: 35 },
+    { left: "92%", delay: "-6s", duration: "19s", color: "#06b6d4", size: 31 },
+  ];
+
+  if (loading)
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-slate-200 border-t-brand-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-400 text-sm font-medium">Sincronizando...</p>
+        </div>
       </div>
-    </div>
-  );
+    );
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-brand-100 selection:text-brand-900">
-      {/* Indicador de Sync Discreto */}
-      <div className="fixed top-0 left-0 right-0 z-[100] h-1 pointer-events-none">
-        {syncStatus === 'saving' && <div className="h-full bg-brand-500 animate-pulse w-full"></div>}
-        {syncStatus === 'fetching' && <div className="h-full bg-green-500 w-1/3 animate-[loading_1.5s_infinite]"></div>}
+    <div className="app-glass relative min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 selection:bg-brand-100 selection:text-brand-900 overflow-x-hidden">
+      <div className="pointer-events-none fixed inset-0 z-[1] overflow-hidden">
+        {balloons.map((balloon, index) => (
+          <div
+            key={`balloon-${index}`}
+            className="party-balloon"
+            style={{
+              left: balloon.left,
+              width: `${balloon.size}px`,
+              height: `${balloon.size + 6}px`,
+              backgroundColor: balloon.color,
+              animationDelay: balloon.delay,
+              animationDuration: balloon.duration,
+            }}
+          >
+            <span className="party-balloon-knot" />
+            <span className="party-balloon-string" />
+          </div>
+        ))}
+
+        <div className="absolute -top-24 -left-20 w-64 h-64 rounded-full bg-pink-200/30 blur-3xl dark:bg-pink-700/20" />
+        <div className="absolute top-1/3 -right-20 w-72 h-72 rounded-full bg-sky-200/30 blur-3xl dark:bg-sky-700/20" />
+        <div className="absolute bottom-10 left-1/4 w-60 h-60 rounded-full bg-amber-200/30 blur-3xl dark:bg-amber-700/20" />
       </div>
 
-      <main className="max-w-md mx-auto min-h-screen px-4 pt-6 pb-28">
+      {/* Indicador de Sync Discreto */}
+      <div className="fixed top-0 left-0 right-0 z-[100] h-1 pointer-events-none">
+        {syncStatus === "saving" && (
+          <div className="h-full bg-brand-500 animate-pulse w-full"></div>
+        )}
+        {syncStatus === "fetching" && (
+          <div className="h-full bg-green-500 w-1/3 animate-[loading_1.5s_infinite]"></div>
+        )}
+      </div>
+
+      <main className="relative z-10 max-w-md mx-auto min-h-screen px-4 pt-6 pb-28">
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-          {currentView === 'dashboard' && <Dashboard data={data} />}
-          {currentView === 'budget' && <BudgetManager data={data} onUpdate={updateData} />}
-          {currentView === 'guests' && <GuestList data={data} onUpdate={updateData} />}
-          {currentView === 'vendors' && <VendorList data={data} onUpdate={updateData} />}
-          {currentView === 'settings' && <Settings data={data} onUpdate={updateData} />}
+          {currentView === "dashboard" && <Dashboard data={data} />}
+          {currentView === "budget" && (
+            <BudgetManager data={data} onUpdate={updateData} />
+          )}
+          {currentView === "guests" && (
+            <GuestList data={data} onUpdate={updateData} />
+          )}
+          {currentView === "vendors" && (
+            <VendorList data={data} onUpdate={updateData} />
+          )}
+          {currentView === "settings" && (
+            <Settings
+              data={data}
+              onUpdate={updateData}
+              theme={theme}
+              onThemeChange={setTheme}
+            />
+          )}
         </div>
       </main>
 
@@ -109,6 +191,49 @@ const App: React.FC = () => {
         @keyframes loading {
           0% { transform: translateX(-100%); }
           100% { transform: translateX(300%); }
+        }
+
+        @keyframes balloon-rise {
+          0% { transform: translateY(35vh) translateX(0); opacity: 0; }
+          8% { opacity: 0.9; }
+          50% { transform: translateY(-8vh) translateX(-10px); }
+          100% { transform: translateY(-72vh) translateX(12px); opacity: 0; }
+        }
+
+        .party-balloon {
+          position: absolute;
+          bottom: -70px;
+          border-radius: 999px;
+          box-shadow:
+            inset -4px -8px 0 rgba(255,255,255,.26),
+            0 8px 20px rgba(15, 23, 42, .22);
+          opacity: .9;
+          animation-name: balloon-rise;
+          animation-timing-function: linear;
+          animation-iteration-count: infinite;
+          filter: saturate(1.12);
+        }
+
+        .party-balloon-knot {
+          position: absolute;
+          bottom: -5px;
+          left: 50%;
+          width: 8px;
+          height: 8px;
+          background: inherit;
+          transform: translateX(-50%) rotate(45deg);
+          border-radius: 2px;
+        }
+
+        .party-balloon-string {
+          position: absolute;
+          top: calc(100% + 2px);
+          left: 50%;
+          width: 1.5px;
+          height: 54px;
+          background: rgba(148, 163, 184, .65);
+          transform: translateX(-50%);
+          border-radius: 999px;
         }
       `}</style>
     </div>

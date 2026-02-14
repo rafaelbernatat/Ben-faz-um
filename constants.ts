@@ -1,4 +1,4 @@
-import { AppData, RSVPStatus } from './types';
+import { AppData, RSVPStatus, TaskStatus } from "./types";
 
 export const DEFAULT_DATA: AppData = {
   details: {
@@ -9,59 +9,107 @@ export const DEFAULT_DATA: AppData = {
   },
   categories: [
     {
-      id: 'cat-1',
-      name: 'Alimentação',
+      id: "cat-1",
+      name: "Alimentação",
       tasks: [
-        { id: 't-1', description: 'Bolo', budgeted: 300, spent: 0, completed: false },
-        { id: 't-2', description: 'Salgadinhos', budgeted: 800, spent: 0, completed: false },
-        { id: 't-3', description: 'Bebidas', budgeted: 400, spent: 0, completed: false },
-      ]
+        {
+          id: "t-1",
+          description: "Bolo",
+          budgeted: 300,
+          spent: 0,
+          status: TaskStatus.TODO,
+        },
+        {
+          id: "t-2",
+          description: "Salgadinhos",
+          budgeted: 800,
+          spent: 0,
+          status: TaskStatus.TODO,
+        },
+        {
+          id: "t-3",
+          description: "Bebidas",
+          budgeted: 400,
+          spent: 0,
+          status: TaskStatus.TODO,
+        },
+      ],
     },
     {
-      id: 'cat-2',
-      name: 'Decoração',
+      id: "cat-2",
+      name: "Decoração",
       tasks: [
-        { id: 't-4', description: 'Balões', budgeted: 200, spent: 150, completed: true },
-        { id: 't-5', description: 'Mesa Principal', budgeted: 600, spent: 0, completed: false },
-      ]
+        {
+          id: "t-4",
+          description: "Balões",
+          budgeted: 200,
+          spent: 150,
+          status: TaskStatus.COMPLETED,
+        },
+        {
+          id: "t-5",
+          description: "Mesa Principal",
+          budgeted: 600,
+          spent: 0,
+          status: TaskStatus.TODO,
+        },
+      ],
     },
     {
-      id: 'cat-3',
-      name: 'Local',
+      id: "cat-3",
+      name: "Local",
       tasks: [
-        { id: 't-6', description: 'Aluguel do Salão', budgeted: 1000, spent: 1000, completed: true },
-      ]
-    }
+        {
+          id: "t-6",
+          description: "Aluguel do Salão",
+          budgeted: 1000,
+          spent: 1000,
+          status: TaskStatus.COMPLETED,
+        },
+      ],
+    },
   ],
   guests: [
-    { id: 'g-1', name: 'Vovó Maria', adults: 1, kids: 0, status: RSVPStatus.CONFIRMED },
-    { id: 'g-2', name: 'Tio João e Família', adults: 2, kids: 2, status: RSVPStatus.PENDING },
+    {
+      id: "g-1",
+      name: "Vovó Maria",
+      adults: 1,
+      kids: 0,
+      status: RSVPStatus.CONFIRMED,
+    },
+    {
+      id: "g-2",
+      name: "Tio João e Família",
+      adults: 2,
+      kids: 2,
+      status: RSVPStatus.PENDING,
+    },
   ],
   vendorServices: [
     {
-      id: 'vs-1',
-      name: 'Buffet',
-      selectedOptionId: 'vo-1',
+      id: "vs-1",
+      name: "Buffet",
+      selectedOptionId: "vo-1",
       options: [
         {
-          id: 'vo-1',
-          name: 'Buffet Delícia',
-          contact: '(11) 99999-9999',
+          id: "vo-1",
+          name: "Buffet Delícia",
+          contact: "(11) 99999-9999",
           quote: 2500,
           rating: 5,
-          notes: 'Inclui bolo e doces. Garçons inclusos.'
+          notes: "Inclui bolo e doces. Garçons inclusos.",
         },
         {
-          id: 'vo-2',
-          name: 'Salgados da Tia',
-          contact: '(11) 98888-8888',
+          id: "vo-2",
+          name: "Salgados da Tia",
+          contact: "(11) 98888-8888",
           quote: 1800,
           rating: 3,
-          notes: 'Preço bom, mas não tem garçom. Precisa contratar à parte.'
-        }
-      ]
-    }
-  ]
+          notes: "Preço bom, mas não tem garçom. Precisa contratar à parte.",
+        },
+      ],
+    },
+  ],
 };
 
-export const STORAGE_KEY = 'eventPlannerData_v2';
+export const STORAGE_KEY = "eventPlannerData_v2";

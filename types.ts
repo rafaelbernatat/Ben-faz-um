@@ -1,7 +1,7 @@
 export enum RSVPStatus {
-  PENDING = 'Pendente',
-  CONFIRMED = 'Confirmado',
-  DECLINED = 'Recusado'
+  PENDING = "Pendente",
+  CONFIRMED = "Confirmado",
+  DECLINED = "Recusado",
 }
 
 export interface Guest {
@@ -13,12 +13,20 @@ export interface Guest {
   contact?: string;
 }
 
+export enum TaskStatus {
+  TODO = "À Fazer",
+  IN_PROGRESS = "Em Andamento",
+  COMPLETED = "Concluída",
+}
+
 export interface Task {
   id: string;
   description: string;
   budgeted: number;
   spent: number;
-  completed: boolean;
+  notes?: string;
+  status?: TaskStatus;
+  completed?: boolean;
 }
 
 export interface Category {
@@ -58,4 +66,9 @@ export interface AppData {
   vendorServices: VendorService[]; // Renomeado de vendors para vendorServices
 }
 
-export type ViewState = 'dashboard' | 'budget' | 'guests' | 'vendors' | 'settings';
+export type ViewState =
+  | "dashboard"
+  | "budget"
+  | "guests"
+  | "vendors"
+  | "settings";

@@ -1,21 +1,33 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover"
+    />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
     <meta name="theme-color" content="#0ea5e9" />
     <title>Planejador do Ben</title>
-    
+
     <script>
+      const savedTheme = localStorage.getItem("theme_mode");
+      const shouldUseDark = savedTheme
+        ? savedTheme === "dark"
+        : window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (shouldUseDark) document.documentElement.classList.add("dark");
+
       // Sistema de Monitoramento de Inicialização
       window.__APP_READY__ = false;
-      
+
       // Timer de pânico: Se não carregar em 12s, mostra erro na tela
       setTimeout(() => {
         if (!window.__APP_READY__) {
-          const root = document.getElementById('root');
+          const root = document.getElementById("root");
           if (root) {
             root.innerHTML = `
               <div style="padding: 40px 20px; font-family: -apple-system, sans-serif; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f8fafc;">
@@ -34,27 +46,169 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
+        darkMode: "class",
         theme: {
           extend: {
             colors: {
-              brand: { 50: '#f0f9ff', 100: '#e0f2fe', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1' }
-            }
-          }
-        }
-      }
+              brand: {
+                50: "#f0f9ff",
+                100: "#e0f2fe",
+                500: "#0ea5e9",
+                600: "#0284c7",
+                700: "#0369a1",
+              },
+            },
+          },
+        },
+      };
     </script>
 
     <style>
-      body { margin: 0; padding: 0; background: #f8fafc; font-family: system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+      body {
+        margin: 0;
+        padding: 0;
+        background:
+          radial-gradient(
+            circle at 10% 20%,
+            rgba(254, 202, 202, 0.35),
+            transparent 40%
+          ),
+          radial-gradient(
+            circle at 85% 30%,
+            rgba(186, 230, 253, 0.35),
+            transparent 45%
+          ),
+          radial-gradient(
+            circle at 50% 90%,
+            rgba(253, 224, 71, 0.2),
+            transparent 40%
+          ),
+          #f8fafc;
+        color: #0f172a;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        transition:
+          background-color 0.2s ease,
+          color 0.2s ease;
+      }
+      .dark body {
+        background:
+          radial-gradient(
+            circle at 10% 20%,
+            rgba(190, 24, 93, 0.15),
+            transparent 40%
+          ),
+          radial-gradient(
+            circle at 85% 30%,
+            rgba(2, 132, 199, 0.16),
+            transparent 45%
+          ),
+          #020617;
+        color: #e2e8f0;
+      }
+
+      .dark .bg-white {
+        background-color: #0f172a !important;
+      }
+      .dark .bg-slate-50 {
+        background-color: #0b1220 !important;
+      }
+      .dark .bg-slate-100 {
+        background-color: #1e293b !important;
+      }
+      .dark .bg-slate-900 {
+        background-color: #020617 !important;
+      }
+
+      .dark .border-slate-50 {
+        border-color: #1e293b !important;
+      }
+      .dark .border-slate-100 {
+        border-color: #1e293b !important;
+      }
+      .dark .border-slate-200 {
+        border-color: #334155 !important;
+      }
+      .dark .border-slate-300 {
+        border-color: #475569 !important;
+      }
+
+      .dark .text-slate-900 {
+        color: #f1f5f9 !important;
+      }
+      .dark .text-slate-800 {
+        color: #e2e8f0 !important;
+      }
+      .dark .text-slate-700 {
+        color: #cbd5e1 !important;
+      }
+      .dark .text-slate-600 {
+        color: #94a3b8 !important;
+      }
+      .dark .text-slate-500 {
+        color: #94a3b8 !important;
+      }
+      .dark .text-slate-400 {
+        color: #64748b !important;
+      }
+      .dark .placeholder\:text-slate-300::placeholder,
+      .dark .placeholder\:text-slate-400::placeholder {
+        color: #64748b !important;
+      }
+
+      .dark .shadow-sm,
+      .dark .shadow-lg,
+      .dark .shadow-xl,
+      .dark .shadow-2xl {
+        box-shadow:
+          0 0 0 1px rgba(148, 163, 184, 0.08),
+          0 10px 24px rgba(2, 6, 23, 0.4) !important;
+      }
+
+      .dark input,
+      .dark select,
+      .dark textarea {
+        color: #e2e8f0;
+      }
+
+      .app-glass div.bg-white,
+      .app-glass div.bg-white\/95 {
+        background-color: rgba(255, 255, 255, 0.72) !important;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-color: rgba(203, 213, 225, 0.65) !important;
+      }
+
+      .dark .app-glass div.bg-white,
+      .dark .app-glass div.bg-white\/95 {
+        background-color: rgba(15, 23, 42, 0.7) !important;
+        border-color: rgba(100, 116, 139, 0.55) !important;
+      }
+
       #root:empty {
-        display: flex; align-items: center; justify-content: center; height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
       }
       #root:empty::after {
-        content: ""; width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: #0ea5e9; border-radius: 50%; animation: spin 0.8s linear infinite;
+        content: "";
+        width: 32px;
+        height: 32px;
+        border: 3px solid #e2e8f0;
+        border-top-color: #0ea5e9;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
       }
-      @keyframes spin { to { transform: rotate(360deg); } }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
     </style>
-
   </head>
   <body>
     <div id="root"></div>
