@@ -8,7 +8,6 @@
     <meta name="apple-mobile-web-app-title" content="Plan Ben" />
     <title>Planejador do Ben</title>
     
-    <!-- Scripts de Terceiros -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -29,19 +28,13 @@
     </script>
 
     <style>
-      body { -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
-      .pt-safe { padding-top: env(safe-area-inset-top); }
-      
+      body { -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; background: #f8fafc; }
       #root:empty {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         height: 100vh;
-        background: #f8fafc;
         gap: 16px;
       }
       #root:empty::after {
@@ -55,26 +48,30 @@
       }
       @keyframes spin { to { transform: rotate(360deg); } }
       
-      #error-display {
+      #critical-error {
         display: none;
         position: fixed;
-        top: 20px;
-        left: 20px;
-        right: 20px;
-        background: #fee2e2;
-        border: 2px solid #ef4444;
-        color: #991b1b;
-        padding: 20px;
+        inset: 20px;
+        background: white;
+        padding: 24px;
         border-radius: 16px;
+        border: 2px solid #ef4444;
         z-index: 9999;
-        font-family: monospace;
-        font-size: 13px;
-        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        overflow: auto;
+        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
       }
     </style>
 
     <script>
       window.process = { env: { NODE_ENV: 'production' } };
+      // Captura erros antes do React carregar
+      window.onerror = function(msg, url, line) {
+        const errDiv = document.getElementById('critical-error');
+        if (errDiv) {
+          errDiv.style.display = 'block';
+          errDiv.innerHTML = `<h1 style="color:#ef4444;font-weight:bold;margin-bottom:8px">Erro de Inicialização</h1><p>${msg}</p><small style="color:#64748b">${url}:${line}</small>`;
+        }
+      };
     </script>
 
     <script type="importmap">
@@ -92,17 +89,14 @@
 }
 </script>
   </head>
-  <body class="bg-slate-50 text-slate-800 antialiased overflow-x-hidden">
-    <div id="error-display"></div>
+  <body>
+    <div id="critical-error"></div>
     <div id="root"></div>
 
-    <script>
-      const display = document.getElementById('error-display');
-      window.onerror = function(msg, url, line, col, error) {
-        display.style.display = 'block';
-        display.innerHTML = `<strong>ERRO:</strong><br>${msg}<br><br><small>${url}:${line}</small>`;
-        return false;
-      };
+    <!-- Verifica se o React carregou corretamente antes de rodar o script principal -->
+    <script type="module">
+      import React from 'react';
+      console.log('⚛️ React ' + React.version + ' carregado.');
     </script>
 
     <script type="module" src="https://esm.sh/run"></script>
