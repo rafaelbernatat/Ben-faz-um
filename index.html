@@ -39,14 +39,14 @@
         animation: spin 1s linear infinite;
       }
       @keyframes spin { to { transform: rotate(360deg); } }
-      
-      /* Ajuste para Notch do iPhone */
       .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
       .pt-safe { padding-top: env(safe-area-inset-top); }
     </style>
 
     <script>
       window.process = { env: { NODE_ENV: 'production' } };
+      // Debug helper
+      window.addEventListener('error', (e) => console.error('Runtime Error:', e));
     </script>
 
     <script type="importmap">
@@ -66,8 +66,8 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- O loader esm.sh/run é a melhor forma de rodar TSX direto na Vercel sem build step -->
-    <script type="module" src="https://esm.sh/run"></script>
+    <!-- esm.sh/run é o motor que compila o TSX no navegador. Versão fixa para estabilidade. -->
+    <script type="module" src="https://esm.sh/run@0.1.0"></script>
     <script type="text/tsx" src="./index.tsx"></script>
   </body>
 </html>
