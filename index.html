@@ -78,6 +78,8 @@
         font-family: monospace;
         font-size: 12px;
         white-space: pre-wrap;
+        max-height: 80vh;
+        overflow-y: auto;
       }
     </style>
     <script type="importmap">
@@ -100,18 +102,19 @@
     <div id="root"></div>
 
     <script>
-      // Detector de erros globais para diagnosticar falhas na Vercel
+      // Detector de erros agressivo para Vercel
       window.onerror = function(msg, url, lineNo, columnNo, error) {
         const display = document.getElementById('error-display');
         display.style.display = 'block';
-        display.textContent = 'Erro detectado:\n' + msg + '\nLocal: ' + url + ':' + lineNo;
+        display.textContent = 'ERRO CRÍTICO:\n' + msg + '\n\nURL: ' + url + '\nLinha: ' + lineNo + ':' + columnNo + '\n\nStack:\n' + (error ? error.stack : 'N/A');
+        console.error(error);
         return false;
       };
       
       window.addEventListener('unhandledrejection', function(event) {
         const display = document.getElementById('error-display');
         display.style.display = 'block';
-        display.textContent = 'Erro de Promessa (Rede ou Módulo):\n' + event.reason;
+        display.textContent = 'PROMESSA REJEITADA:\n' + event.reason;
       });
     </script>
 
