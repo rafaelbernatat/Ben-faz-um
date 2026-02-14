@@ -3,6 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Planejador do Ben</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -39,19 +41,15 @@
     </style>
 
     <script>
-      // Força o ambiente de produção para o React
+      // Configuração global de ambiente
       window.process = { env: { NODE_ENV: 'production' } };
       
-      // Monitor de erro fatal
-      window.onerror = function(m, u, l) { 
-        console.error("Erro Detectado:", m, "em", u, ":", l);
-        if (m.includes("Script error") || m.includes("import")) {
-          console.warn("Possível erro de carregamento de módulo. Verifique a conexão.");
-        }
-      };
+      // Captura de erros de inicialização
+      window.addEventListener('error', function(event) {
+        console.error("Erro fatal detectado:", event.error);
+      });
     </script>
 
-    <!-- IMPORTMAP RESTRITO: Apenas React 18.2.0 -->
     <script type="importmap">
 {
   "imports": {
@@ -69,7 +67,8 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- O motor 'esm.sh/run' processa o index.tsx usando o importmap acima -->
+    
+    <!-- Motor de execução ESM para processar os arquivos TSX em tempo real no navegador -->
     <script type="module" src="https://esm.sh/run"></script>
     <script type="text/tsx" src="./index.tsx"></script>
   </body>
