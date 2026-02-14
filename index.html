@@ -3,68 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
-    <title>Planejador do Ben - Debug Mode</title>
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#0ea5e9" />
+    <title>Planejador do Ben</title>
     
-    <script>
-      // SISTEMA DE CAPTURA DE LOGS PARA EXIBIÇÃO NA TELA
-      (function() {
-        window.__LOGS__ = [];
-        const originalLog = console.log;
-        const originalError = console.error;
-        const originalWarn = console.warn;
-
-        const capture = (type, args) => {
-          const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
-          window.__LOGS__.push(`[${type}] ${msg}`);
-          if (window.__LOG_DIV__) {
-            const line = document.createElement('div');
-            line.style.borderBottom = "1px solid #eee";
-            line.style.padding = "4px 0";
-            line.style.color = type === 'ERR' ? 'red' : (type === 'WARN' ? 'orange' : '#333');
-            line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            window.__LOG_DIV__.appendChild(line);
-          }
-        };
-
-        console.log = (...args) => { originalLog(...args); capture('LOG', args); };
-        console.error = (...args) => { originalError(...args); capture('ERR', args); };
-        console.warn = (...args) => { originalWarn(...args); capture('WARN', args); };
-
-        // Teste de integridade: O arquivo principal existe?
-        fetch('./index.tsx').then(r => {
-          if (!r.ok) console.error(`Falha Crítica: index.tsx retornou status ${r.status}`);
-          else console.log("Arquivo index.tsx acessível.");
-        }).catch(e => console.error("Erro de rede ao buscar index.tsx:", e));
-
-        // Timer de Pânico
-        setTimeout(() => {
-          if (!window.__APP_READY__) {
-            const root = document.getElementById('root');
-            if (root) {
-              root.style.display = "block";
-              root.style.background = "#fff";
-              root.style.zIndex = "9999";
-              root.innerHTML = `
-                <div style="padding: 20px; font-family: monospace; font-size: 12px; line-height: 1.4;">
-                  <h1 style="color:red; margin:0 0 10px 0;">🛑 Falha no Carregamento</h1>
-                  <p>O app não iniciou em 10s. Verifique os logs abaixo:</p>
-                  <div id="debug-console" style="background:#f8f8f8; border:1px solid #ddd; padding:10px; height:300px; overflow:auto; margin-bottom:15px;"></div>
-                  <button onclick="window.location.reload(true)" style="padding:10px 20px; background:#0ea5e9; color:#fff; border:none; border-radius:5px; cursor:pointer;">Tentar Novamente</button>
-                  <p style="margin-top:10px; color:#666;">Se você vir erros de "MIME type" ou "404", a Vercel não está servindo os arquivos .tsx corretamente.</p>
-                </div>
-              `;
-              window.__LOG_DIV__ = document.getElementById('debug-console');
-              window.__LOGS__.forEach(msg => {
-                const line = document.createElement('div');
-                line.textContent = msg;
-                window.__LOG_DIV__.appendChild(line);
-              });
-            }
-          }
-        }, 10000);
-      })();
-    </script>
-
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -79,17 +22,16 @@
     </script>
 
     <style>
-      body { margin: 0; padding: 0; background: #f8fafc; }
+      body { margin: 0; padding: 0; background: #f8fafc; font-family: system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
       #root:empty {
         display: flex; align-items: center; justify-content: center; height: 100vh;
       }
       #root:empty::after {
-        content: ""; width: 30px; height: 30px; border: 3px solid #e2e8f0; border-top-color: #0ea5e9; border-radius: 50%; animation: spin 0.8s linear infinite;
+        content: ""; width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: #0ea5e9; border-radius: 50%; animation: spin 0.8s linear infinite;
       }
       @keyframes spin { to { transform: rotate(360deg); } }
+      .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
     </style>
-
-    <script>window.process = { env: { NODE_ENV: 'production' } };</script>
 
     <script type="importmap">
 {
@@ -108,8 +50,7 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- Usando a versão bundle do runner para garantir estabilidade -->
-    <script type="module" src="https://esm.sh/run@0.1.0"></script>
+    <script type="module" src="https://esm.sh/run"></script>
     <script type="text/tsx" src="./index.tsx"></script>
   </body>
 </html>
