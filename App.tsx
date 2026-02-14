@@ -27,8 +27,15 @@ const App: React.FC = () => {
   useEffect(() => {
     const initData = async () => {
       setSyncStatus('fetching');
+      
+      // Carregar local imediatamente como fallback rápido
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try { setData(JSON.parse(saved)); } catch(e) {}
+      }
+
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000); // 4 segundos de limite rigoroso
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // Timeout de 3s para rede
 
       try {
         const response = await fetch(FIREBASE_URL, { signal: controller.signal });
@@ -37,21 +44,10 @@ const App: React.FC = () => {
           if (remoteData) {
             setData(remoteData);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteData));
-          } else {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) setData(JSON.parse(saved));
           }
         }
       } catch (e) {
-        console.warn("Utilizando redundância local:", e);
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          try {
-            setData(JSON.parse(saved));
-          } catch (err) {
-            setData(DEFAULT_DATA);
-          }
-        }
+        console.warn("Utilizando redundância local ou padrão:", e);
       } finally {
         clearTimeout(timeoutId);
         setLoading(false);
@@ -81,25 +77,6 @@ const App: React.FC = () => {
 
     return () => clearTimeout(timer);
   }, [data, loading]);
-
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      if (loading) return;
-      if (Date.now() - lastChangeTime.current < 8000) return;
-      
-      try {
-        const response = await fetch(FIREBASE_URL);
-        if (response.ok) {
-          const remoteData = await response.json();
-          if (remoteData && JSON.stringify(remoteData) !== JSON.stringify(dataRef.current)) {
-            setData(remoteData);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteData));
-          }
-        }
-      } catch (e) {}
-    }, 20000);
-    return () => clearInterval(interval);
-  }, [loading]);
 
   const updateData = (newData: AppData) => {
     lastChangeTime.current = Date.now();
