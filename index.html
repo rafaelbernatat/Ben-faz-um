@@ -8,6 +8,30 @@
     <meta name="theme-color" content="#0ea5e9" />
     <title>Planejador do Ben</title>
     
+    <script>
+      // Sistema de Monitoramento de Inicialização
+      window.__APP_READY__ = false;
+      window.addEventListener('error', function(e) {
+        console.error('Erro detectado:', e.message);
+      });
+
+      // Timer de pânico: Se não carregar em 10s, mostra log na tela
+      setTimeout(() => {
+        if (!window.__APP_READY__) {
+          const root = document.getElementById('root');
+          if (root) {
+            root.innerHTML = `
+              <div style="padding: 24px; font-family: sans-serif; text-align: center;">
+                <h1 style="color: #e11d48; font-weight: 800; font-size: 20px;">Falha na Inicialização</h1>
+                <p style="color: #64748b; margin-top: 8px;">Ocorreu um erro ao carregar os módulos do React.</p>
+                <button onclick="window.location.reload(true)" style="margin-top: 20px; background: #0ea5e9; color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 600;">Tentar Novamente</button>
+              </div>
+            `;
+          }
+        }
+      }, 10000);
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -50,7 +74,8 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="https://esm.sh/run"></script>
+    <!-- Carregador TSX estável -->
+    <script type="module" src="https://esm.sh/run@0.1.0"></script>
     <script type="text/tsx" src="./index.tsx"></script>
   </body>
 </html>
