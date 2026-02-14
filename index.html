@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#0ea5e9" />
     <title>Planejador do Ben</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -21,7 +22,7 @@
     </script>
 
     <style>
-      body { margin: 0; padding: 0; background: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+      body { margin: 0; padding: 0; background: #f8fafc; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
       #root:empty {
         display: flex;
         align-items: center;
@@ -38,13 +39,14 @@
         animation: spin 1s linear infinite;
       }
       @keyframes spin { to { transform: rotate(360deg); } }
+      
+      /* Ajuste para Notch do iPhone */
+      .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+      .pt-safe { padding-top: env(safe-area-inset-top); }
     </style>
 
     <script>
       window.process = { env: { NODE_ENV: 'production' } };
-      window.addEventListener('error', function(e) {
-        console.error("Erro de execução:", e.message);
-      });
     </script>
 
     <script type="importmap">
@@ -64,6 +66,7 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- O loader esm.sh/run é a melhor forma de rodar TSX direto na Vercel sem build step -->
     <script type="module" src="https://esm.sh/run"></script>
     <script type="text/tsx" src="./index.tsx"></script>
   </body>
