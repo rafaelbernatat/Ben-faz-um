@@ -111,7 +111,7 @@
       window.addEventListener('unhandledrejection', function(event) {
         const display = document.getElementById('error-display');
         display.style.display = 'block';
-        display.textContent = 'Erro de Promessa:\n' + event.reason;
+        display.textContent = 'Erro de Promessa (Rede ou Módulo):\n' + event.reason;
       });
     </script>
 
