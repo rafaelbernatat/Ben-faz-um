@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppData, VendorService, VendorOption } from '../types.ts';
+import { AppData, VendorService, VendorOption } from '../types';
 import { 
   Phone, Trash2, Plus, Star, ChevronDown, ChevronUp, 
   FileText, Trophy, CheckCircle2

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { AppData } from '../types.ts';
+import { AppData } from '../types';
 import { 
-  Cloud, CheckCircle, Smartphone, Users, 
+  Cloud, CheckCircle, Users, 
   Info, AlertTriangle, Github, Send, Lock, ExternalLink 
 } from 'lucide-react';
 
@@ -11,7 +11,7 @@ interface SettingsProps {
 }
 
 const Settings: React.FC<SettingsProps> = ({ data, onUpdate }) => {
-  const [firebaseUrl, setFirebaseUrl] = useState(localStorage.getItem('fb_url') || 'https://ben-faz-1-default-rtdb.firebaseio.com/');
+  const [firebaseUrl] = useState(localStorage.getItem('fb_url') || 'https://ben-faz-1-default-rtdb.firebaseio.com/');
   const [githubToken, setGithubToken] = useState(localStorage.getItem('gh_token') || '');
   const [githubRepo, setGithubRepo] = useState(localStorage.getItem('gh_repo') || 'rafaelbernatat/Ben-faz-um');
   const [isPushing, setIsPushing] = useState(false);

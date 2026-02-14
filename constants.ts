@@ -1,4 +1,4 @@
-import { AppData, RSVPStatus } from './types.ts';
+import { AppData, RSVPStatus } from './types';
 
 export const DEFAULT_DATA: AppData = {
   details: {

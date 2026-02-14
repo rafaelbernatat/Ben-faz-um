@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppData, RSVPStatus } from '../types.ts';
+import { AppData, RSVPStatus } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Calendar, CheckCircle2, DollarSign, Users, Clock } from 'lucide-react';
 

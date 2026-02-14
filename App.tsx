@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppData, ViewState } from './types.ts';
-import { DEFAULT_DATA, STORAGE_KEY } from './constants.ts';
-import Dashboard from './components/Dashboard.tsx';
-import BudgetManager from './components/BudgetManager.tsx';
-import GuestList from './components/GuestList.tsx';
-import VendorList from './components/VendorList.tsx';
-import Settings from './components/Settings.tsx';
-import BottomNav from './components/BottomNav.tsx';
+import { AppData, ViewState } from './types';
+import { DEFAULT_DATA, STORAGE_KEY } from './constants';
+import Dashboard from './components/Dashboard';
+import BudgetManager from './components/BudgetManager';
+import GuestList from './components/GuestList';
+import VendorList from './components/VendorList';
+import Settings from './components/Settings';
+import BottomNav from './components/BottomNav';
 
 const FIREBASE_URL = 'https://ben-faz-1-default-rtdb.firebaseio.com/eventData.json';
 
