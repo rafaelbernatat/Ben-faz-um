@@ -35,7 +35,7 @@
       .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
       .pt-safe { padding-top: env(safe-area-inset-top); }
       
-      /* Preloader CSS para quando o JS falha ou está carregando */
+      /* Preloader CSS */
       #root:empty {
         display: flex;
         flex-direction: column;
@@ -62,6 +62,23 @@
         font-weight: 500;
       }
       @keyframes spin { to { transform: rotate(360deg); } }
+      
+      #error-display {
+        display: none;
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        right: 20px;
+        background: #fee2e2;
+        border: 1px solid #ef4444;
+        color: #991b1b;
+        padding: 16px;
+        border-radius: 12px;
+        z-index: 9999;
+        font-family: monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+      }
     </style>
     <script type="importmap">
 {
@@ -79,7 +96,25 @@
 </script>
   </head>
   <body class="bg-slate-50 text-slate-800 antialiased overflow-x-hidden">
+    <div id="error-display"></div>
     <div id="root"></div>
+
+    <script>
+      // Detector de erros globais para diagnosticar falhas na Vercel
+      window.onerror = function(msg, url, lineNo, columnNo, error) {
+        const display = document.getElementById('error-display');
+        display.style.display = 'block';
+        display.textContent = 'Erro detectado:\n' + msg + '\nLocal: ' + url + ':' + lineNo;
+        return false;
+      };
+      
+      window.addEventListener('unhandledrejection', function(event) {
+        const display = document.getElementById('error-display');
+        display.style.display = 'block';
+        display.textContent = 'Erro de Promessa:\n' + event.reason;
+      });
+    </script>
+
     <!-- Carregador universal de módulos estável -->
     <script type="module" src="https://esm.sh/run"></script>
     <script type="text/tsx" src="./index.tsx"></script>
