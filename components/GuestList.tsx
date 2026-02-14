@@ -138,6 +138,7 @@ const GuestList: React.FC<GuestListProps> = ({ data, onUpdate }) => {
                   className="w-full p-3 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-brand-500 outline-none"
                   value={newGuest.adults}
                   onChange={e => setNewGuest({...newGuest, adults: parseInt(e.target.value) || 0})}
+                  onFocus={e => e.target.select()}
                 />
               </div>
               <div className="flex-1">
@@ -147,6 +148,7 @@ const GuestList: React.FC<GuestListProps> = ({ data, onUpdate }) => {
                   className="w-full p-3 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-brand-500 outline-none"
                   value={newGuest.kids}
                   onChange={e => setNewGuest({...newGuest, kids: parseInt(e.target.value) || 0})}
+                  onFocus={e => e.target.select()}
                 />
               </div>
             </div>
@@ -212,6 +214,7 @@ const GuestList: React.FC<GuestListProps> = ({ data, onUpdate }) => {
                         className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-brand-500 outline-none"
                         value={editGuest.adults}
                         onChange={e => setEditGuest({ ...editGuest, adults: parseInt(e.target.value) || 0 })}
+                        onFocus={e => e.target.select()}
                       />
                     </div>
                     <div className="flex-1">
@@ -221,6 +224,7 @@ const GuestList: React.FC<GuestListProps> = ({ data, onUpdate }) => {
                         className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-brand-500 outline-none"
                         value={editGuest.kids}
                         onChange={e => setEditGuest({ ...editGuest, kids: parseInt(e.target.value) || 0 })}
+                        onFocus={e => e.target.select()}
                       />
                     </div>
                   </div>

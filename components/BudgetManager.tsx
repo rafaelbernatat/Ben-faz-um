@@ -177,6 +177,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({ data, onUpdate }) => {
                                                     type="number"
                                                     value={task.budgeted}
                                                     onChange={(e) => updateTask(cat.id, task.id, 'budgeted', parseFloat(e.target.value) || 0)}
+                                                    onFocus={(e) => e.target.select()}
                                                     className="w-full text-sm p-1 bg-transparent border-none focus:ring-0 text-slate-600 min-w-0"
                                                 />
                                             </div>
@@ -189,6 +190,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({ data, onUpdate }) => {
                                                     type="number"
                                                     value={task.spent}
                                                     onChange={(e) => updateTask(cat.id, task.id, 'spent', parseFloat(e.target.value) || 0)}
+                                                    onFocus={(e) => e.target.select()}
                                                     className={`w-full text-sm p-1 bg-transparent border-none focus:ring-0 min-w-0 ${task.spent > task.budgeted ? 'text-red-500 font-bold' : 'text-slate-600'}`}
                                                 />
                                             </div>

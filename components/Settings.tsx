@@ -264,6 +264,7 @@ const Settings: React.FC<SettingsProps> = ({ data, onUpdate }) => {
                     type="number"
                     value={data.details.totalBudget}
                     onChange={(e) => handleChange('totalBudget', parseFloat(e.target.value) || 0)}
+                    onFocus={(e) => e.target.select()}
                     className="w-full p-4 border border-slate-100 rounded-2xl bg-slate-50 font-bold text-brand-600 outline-none"
                 />
               </div>
