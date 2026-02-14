@@ -66,6 +66,7 @@
     <script>
       window.process = { env: { NODE_ENV: 'production' } };
       window.onerror = function(msg, url, line) {
+        console.error("Runtime Error:", msg, "at", url, ":", line);
         const errDiv = document.getElementById('critical-error');
         if (errDiv) {
           errDiv.style.display = 'block';
@@ -93,6 +94,7 @@
     <div id="critical-error"></div>
     <div id="root"></div>
 
+    <!-- Loader esm.sh/run para transpilar TSX no navegador sem build step -->
     <script type="module" src="https://esm.sh/run"></script>
     <script type="text/tsx" src="./index.tsx"></script>
   </body>

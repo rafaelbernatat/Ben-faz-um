@@ -18,7 +18,6 @@ const App: React.FC = () => {
   
   const dataRef = useRef<AppData>(data);
   const isInitialMount = useRef(true);
-  const lastChangeTime = useRef<number>(Date.now());
 
   useEffect(() => {
     dataRef.current = data;
@@ -28,14 +27,22 @@ const App: React.FC = () => {
     const initData = async () => {
       setSyncStatus('fetching');
       
-      // Carregar local imediatamente como fallback rápido
+      // 1. Tentar carregar do LocalStorage imediatamente
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        try { setData(JSON.parse(saved)); } catch(e) {}
+        try {
+          const parsed = JSON.parse(saved);
+          setData(parsed);
+          // Se carregamos do local, já podemos mostrar a UI básica enquanto a rede carrega
+          setLoading(false);
+        } catch(e) {
+          console.error("Erro ao ler cache local", e);
+        }
       }
 
+      // 2. Tentar buscar da nuvem com timeout rigoroso
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000); // Timeout de 3s para rede
+      const timeoutId = setTimeout(() => controller.abort(), 4000); 
 
       try {
         const response = await fetch(FIREBASE_URL, { signal: controller.signal });
@@ -47,10 +54,10 @@ const App: React.FC = () => {
           }
         }
       } catch (e) {
-        console.warn("Utilizando redundância local ou padrão:", e);
+        console.warn("Rede falhou ou demorou demais, mantendo dados locais/padrão.");
       } finally {
         clearTimeout(timeoutId);
-        setLoading(false);
+        setLoading(false); // Garante que o loading pare aconteça o que acontecer
         setSyncStatus('idle');
         isInitialMount.current = false;
       }
@@ -69,7 +76,7 @@ const App: React.FC = () => {
           body: JSON.stringify(dataRef.current)
         });
       } catch (e) {
-        console.error("Firebase Sync Error");
+        console.error("Erro ao salvar no Firebase");
       } finally {
         setSyncStatus('idle');
       }
@@ -79,7 +86,6 @@ const App: React.FC = () => {
   }, [data, loading]);
 
   const updateData = (newData: AppData) => {
-    lastChangeTime.current = Date.now();
     setData(newData);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
   };
@@ -87,7 +93,7 @@ const App: React.FC = () => {
   if (loading) return (
     <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-50">
       <div className="w-10 h-10 border-4 border-slate-200 border-t-brand-600 rounded-full animate-spin mb-4"></div>
-      <p className="text-slate-500 font-medium text-sm animate-pulse">Organizando os dinossauros...</p>
+      <p className="text-slate-500 font-medium text-sm animate-pulse">Iniciando sistema...</p>
     </div>
   );
 
