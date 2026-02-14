@@ -39,35 +39,30 @@
         animation: spin 1s linear infinite;
       }
       @keyframes spin { to { transform: rotate(360deg); } }
-      .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
-      .pt-safe { padding-top: env(safe-area-inset-top); }
     </style>
 
     <script>
       window.process = { env: { NODE_ENV: 'production' } };
-      // Debug helper
-      window.addEventListener('error', (e) => console.error('Runtime Error:', e));
     </script>
 
     <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.2.0",
-    "react-dom": "https://esm.sh/react-dom@18.2.0",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-    "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
-    "recharts": "https://esm.sh/recharts@2.12.7?external=react,react-dom&bundle",
-    "lucide-react": "https://esm.sh/lucide-react@0.344.0?external=react&bundle",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/"
-  }
-}
-</script>
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom": "https://esm.sh/react-dom@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
+        "react/": "https://esm.sh/react@18.2.0/",
+        "react-dom/": "https://esm.sh/react-dom@18.2.0/",
+        "recharts": "https://esm.sh/recharts@2.12.7?external=react,react-dom&bundle",
+        "lucide-react": "https://esm.sh/lucide-react@0.344.0?external=react&bundle"
+      }
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
-    <!-- esm.sh/run é o motor que compila o TSX no navegador. Versão fixa para estabilidade. -->
-    <script type="module" src="https://esm.sh/run@0.1.0"></script>
+    <script type="module" src="https://esm.sh/run"></script>
     <script type="text/tsx" src="./index.tsx"></script>
   </body>
 </html>
