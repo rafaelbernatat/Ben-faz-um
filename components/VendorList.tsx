@@ -268,7 +268,7 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                                         </div>
 
                                         {/* Main Layout */}
-                                        <div className="flex gap-3 pt-2">
+                                        <div className="flex flex-col sm:flex-row gap-3 pt-2">
                                             {/* Select Button Column */}
                                             <div className="pt-2">
                                                 <button 
@@ -318,19 +318,19 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                                                           value={formatPhoneBR(option.contact)}
                                                           onChange={e => updateOption(service.id, option.id, 'contact', formatPhoneBR(e.target.value))}
                                                         />
-                                                  {option.contact && (
-                                                    <a
-                                                      href={getWhatsappLink(option.contact)}
-                                                      target="_blank"
-                                                      rel="noreferrer"
-                                                      className="absolute right-2 top-2.5 inline-flex items-center gap-1 bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-emerald-600 transition-colors"
-                                                      title="Abrir WhatsApp"
-                                                    >
-                                                      <MessageCircle className="w-4 h-4" />
-                                                      WhatsApp
-                                                    </a>
-                                                  )}
                                                     </div>
+                                                {option.contact && (
+                                                  <a
+                                                    href={getWhatsappLink(option.contact)}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="inline-flex items-center justify-center gap-2 w-full bg-emerald-500 text-white text-sm font-semibold px-4 py-3 rounded-xl hover:bg-emerald-600 transition-colors"
+                                                    title="Abrir WhatsApp"
+                                                  >
+                                                    <MessageCircle className="w-4 h-4" />
+                                                    Abrir WhatsApp
+                                                  </a>
+                                                )}
                                                 <div className="bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 w-full">
                                                         {renderStars(service.id, option.id, option.rating)}
                                                     </div>
@@ -350,7 +350,7 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                                             </div>
 
                                             {/* Delete Button */}
-                                            <div className="pt-2">
+                                            <div className="pt-2 self-end sm:self-auto">
                                                 <button 
                                                     onClick={() => removeOption(service.id, option.id)}
                                                 className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
