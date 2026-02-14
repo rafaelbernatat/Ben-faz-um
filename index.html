@@ -73,6 +73,9 @@
           errDiv.innerHTML = `<h1 style="color:#ef4444;font-weight:bold;margin-bottom:8px">Erro de Inicialização</h1><p>${msg}</p><small style="color:#64748b">${url}:${line}</small>`;
         }
       };
+      window.onunhandledrejection = function(event) {
+        console.error("Unhandled Promise Rejection:", event.reason);
+      };
     </script>
 
     <script type="importmap">
@@ -94,7 +97,6 @@
     <div id="critical-error"></div>
     <div id="root"></div>
 
-    <!-- Carrega o transpilador esm.sh/run para processar TSX em tempo real no browser -->
     <script type="module" src="https://esm.sh/run"></script>
     <script type="text/tsx" src="./index.tsx"></script>
   </body>
