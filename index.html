@@ -11,25 +11,24 @@
     <script>
       // Sistema de Monitoramento de Inicialização
       window.__APP_READY__ = false;
-      window.addEventListener('error', function(e) {
-        console.error('Erro detectado:', e.message);
-      });
-
-      // Timer de pânico: Se não carregar em 10s, mostra log na tela
+      
+      // Timer de pânico: Se não carregar em 12s, mostra erro na tela
       setTimeout(() => {
         if (!window.__APP_READY__) {
           const root = document.getElementById('root');
           if (root) {
             root.innerHTML = `
-              <div style="padding: 24px; font-family: sans-serif; text-align: center;">
-                <h1 style="color: #e11d48; font-weight: 800; font-size: 20px;">Falha na Inicialização</h1>
-                <p style="color: #64748b; margin-top: 8px;">Ocorreu um erro ao carregar os módulos do React.</p>
-                <button onclick="window.location.reload(true)" style="margin-top: 20px; background: #0ea5e9; color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 600;">Tentar Novamente</button>
+              <div style="padding: 40px 20px; font-family: -apple-system, sans-serif; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f8fafc;">
+                <div style="background: white; padding: 32px; border-radius: 24px; shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; max-width: 320px;">
+                  <h1 style="color: #e11d48; font-weight: 800; font-size: 20px; margin-bottom: 8px;">Falha na Inicialização</h1>
+                  <p style="color: #64748b; font-size: 14px; line-height: 1.5;">Ocorreu um conflito nos módulos do React. Limpe o cache do navegador e tente novamente.</p>
+                  <button onclick="window.location.reload(true)" style="margin-top: 24px; background: #0ea5e9; color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 600; width: 100%; cursor: pointer;">Tentar Novamente</button>
+                </div>
               </div>
             `;
           }
         }
-      }, 10000);
+      }, 12000);
     </script>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -54,7 +53,6 @@
         content: ""; width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: #0ea5e9; border-radius: 50%; animation: spin 0.8s linear infinite;
       }
       @keyframes spin { to { transform: rotate(360deg); } }
-      .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 
     <script type="importmap">
@@ -74,8 +72,8 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- Carregador TSX estável -->
-    <script type="module" src="https://esm.sh/run@0.1.0"></script>
+    <!-- Carregador TSX -->
+    <script type="module" src="https://esm.sh/run"></script>
     <script type="text/tsx" src="./index.tsx"></script>
   </body>
 </html>
