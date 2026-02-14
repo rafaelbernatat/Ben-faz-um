@@ -22,6 +22,10 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
   const COLORS = ['#f43f5e', '#10b981'];
 
   const guests = data.guests || [];
+  const totalGuests = guests.length;
+  const totalAdults = guests.reduce((sum, guest) => sum + guest.adults, 0);
+  const totalKids = guests.reduce((sum, guest) => sum + guest.kids, 0);
+  const totalPeople = totalAdults + totalKids;
   const confirmedCount = guests.filter(g => g.status === RSVPStatus.CONFIRMED).length;
   const pendingCount = guests.filter(g => g.status === RSVPStatus.PENDING).length;
 
@@ -85,7 +89,31 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
         <h2 className="text-sm font-bold text-slate-500 mb-4 flex items-center">
           <Users className="w-4 h-4 mr-1 text-brand-500" /> Convidados
         </h2>
-        <div className="flex justify-around items-center">
+        <p className="text-xs text-slate-400 mb-4">
+          {totalGuests} convidados • {totalPeople} pessoas • {totalAdults} adultos • {totalKids} criancas
+        </p>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-center">
+            <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-2">
+              <Users className="w-6 h-6 text-slate-500" />
+            </div>
+            <p className="text-lg font-black text-slate-800">{totalGuests}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase">Total</p>
+          </div>
+          <div className="text-center">
+            <div className="w-12 h-12 bg-sky-50 rounded-2xl flex items-center justify-center mx-auto mb-2">
+              <Users className="w-6 h-6 text-sky-500" />
+            </div>
+            <p className="text-lg font-black text-slate-800">{totalAdults}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase">Adultos</p>
+          </div>
+          <div className="text-center">
+            <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto mb-2">
+              <Users className="w-6 h-6 text-rose-500" />
+            </div>
+            <p className="text-lg font-black text-slate-800">{totalKids}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase">Criancas</p>
+          </div>
           <div className="text-center">
             <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-2">
               <CheckCircle2 className="w-6 h-6 text-emerald-500" />
@@ -93,7 +121,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
             <p className="text-lg font-black text-slate-800">{confirmedCount}</p>
             <p className="text-[10px] font-bold text-slate-400 uppercase">Confirmados</p>
           </div>
-          <div className="h-10 w-px bg-slate-100"></div>
           <div className="text-center">
             <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-2">
               <Clock className="w-6 h-6 text-amber-500" />

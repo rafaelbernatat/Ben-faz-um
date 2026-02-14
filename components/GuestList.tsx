@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppData, Guest, RSVPStatus } from '../types';
-import { UserPlus, User, Trash2, Check, X, Clock } from 'lucide-react';
+import { UserPlus, User, Trash2, Check, X, Clock, Pencil } from 'lucide-react';
 
 interface GuestListProps {
   data: AppData;
@@ -9,6 +9,13 @@ interface GuestListProps {
 
 const GuestList: React.FC<GuestListProps> = ({ data, onUpdate }) => {
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingGuestId, setEditingGuestId] = useState<string | null>(null);
+  const [editGuest, setEditGuest] = useState<Partial<Guest>>({
+    name: '',
+    adults: 1,
+    kids: 0,
+    contact: ''
+  });
   const [newGuest, setNewGuest] = useState<Partial<Guest>>({
     name: '',
     adults: 1,
@@ -40,6 +47,9 @@ const GuestList: React.FC<GuestListProps> = ({ data, onUpdate }) => {
       ...data,
       guests: data.guests.filter(g => g.id !== id)
     });
+    if (editingGuestId === id) {
+      setEditingGuestId(null);
+    }
   };
 
   const updateStatus = (id: string, status: RSVPStatus) => {
@@ -47,6 +57,36 @@ const GuestList: React.FC<GuestListProps> = ({ data, onUpdate }) => {
       ...data,
       guests: data.guests.map(g => g.id === id ? { ...g, status } : g)
     });
+  };
+
+  const startEdit = (guest: Guest) => {
+    setEditingGuestId(guest.id);
+    setEditGuest({
+      name: guest.name,
+      adults: guest.adults,
+      kids: guest.kids,
+      contact: guest.contact
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingGuestId(null);
+  };
+
+  const saveEdit = (id: string) => {
+    if (!editGuest.name) return;
+    onUpdate({
+      ...data,
+      guests: data.guests.map(g => g.id === id ? {
+        ...g,
+        name: editGuest.name || g.name,
+        adults: editGuest.adults ?? g.adults,
+        kids: editGuest.kids ?? g.kids,
+        contact: editGuest.contact || '',
+        status: editGuest.status || g.status
+      } : g)
+    });
+    setEditingGuestId(null);
   };
 
   const getStatusColor = (status: RSVPStatus) => {
@@ -57,10 +97,20 @@ const GuestList: React.FC<GuestListProps> = ({ data, onUpdate }) => {
     }
   };
 
+  const totalGuests = data.guests.length;
+  const totalAdults = data.guests.reduce((sum, guest) => sum + guest.adults, 0);
+  const totalKids = data.guests.reduce((sum, guest) => sum + guest.kids, 0);
+  const totalPeople = totalAdults + totalKids;
+
   return (
     <div className="pb-24 space-y-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-slate-800">Lista de Convidados</h2>
+        <div>
+          <h2 className="text-xl font-bold text-slate-800">Lista de Convidados</h2>
+          <p className="text-xs text-slate-400 mt-1">
+            {totalGuests} convidados • {totalPeople} pessoas • {totalAdults} adultos • {totalKids} criancas
+          </p>
+        </div>
         <button 
           onClick={() => setShowAddForm(!showAddForm)}
           className="bg-brand-600 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center shadow-lg hover:bg-brand-700 transition-colors"
@@ -135,10 +185,70 @@ const GuestList: React.FC<GuestListProps> = ({ data, onUpdate }) => {
                     {guest.contact && <p className="text-xs text-slate-400 mt-1">{guest.contact}</p>}
                  </div>
               </div>
-              <button onClick={() => removeGuest(guest.id)} className="text-slate-300 hover:text-red-500 p-1">
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button onClick={() => startEdit(guest)} className="text-slate-300 hover:text-slate-600 p-1" title="Editar">
+                  <Pencil className="w-4 h-4" />
+                </button>
+                <button onClick={() => removeGuest(guest.id)} className="text-slate-300 hover:text-red-500 p-1" title="Remover">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
+
+            {editingGuestId === guest.id && (
+              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <div className="space-y-3">
+                  <input
+                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 outline-none"
+                    placeholder="Nome da Família / Convidado"
+                    value={editGuest.name}
+                    onChange={e => setEditGuest({ ...editGuest, name: e.target.value })}
+                  />
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label className="text-xs text-slate-500 mb-1 block font-medium">Adultos</label>
+                      <input
+                        type="number" min="1"
+                        className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-brand-500 outline-none"
+                        value={editGuest.adults}
+                        onChange={e => setEditGuest({ ...editGuest, adults: parseInt(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-xs text-slate-500 mb-1 block font-medium">Crianças</label>
+                      <input
+                        type="number" min="0"
+                        className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-brand-500 outline-none"
+                        value={editGuest.kids}
+                        onChange={e => setEditGuest({ ...editGuest, kids: parseInt(e.target.value) || 0 })}
+                      />
+                    </div>
+                  </div>
+                  <input
+                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 outline-none"
+                    placeholder="Contato (Opcional)"
+                    value={editGuest.contact}
+                    onChange={e => setEditGuest({ ...editGuest, contact: e.target.value })}
+                  />
+                  <div>
+                    <label className="text-xs text-slate-500 mb-1 block font-medium">Status</label>
+                    <select
+                      className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-brand-500 outline-none"
+                      value={editGuest.status || guest.status}
+                      onChange={e => setEditGuest({ ...editGuest, status: e.target.value as RSVPStatus })}
+                    >
+                      <option value={RSVPStatus.CONFIRMED}>Confirmado</option>
+                      <option value={RSVPStatus.PENDING}>Pendente</option>
+                      <option value={RSVPStatus.DECLINED}>Recusado</option>
+                    </select>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button onClick={cancelEdit} className="px-4 py-2 text-slate-500 text-sm hover:bg-white rounded-lg">Cancelar</button>
+                    <button onClick={() => saveEdit(guest.id)} className="px-6 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700">Salvar</button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center justify-between border-t border-slate-50 pt-3 mt-1">
                 <span className={`text-xs px-2 py-1 rounded border ${getStatusColor(guest.status)} font-medium`}>

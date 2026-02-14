@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { AppData, VendorService, VendorOption } from '../types';
 import { 
   Phone, Trash2, Plus, Star, ChevronDown, ChevronUp, 
-  FileText, Trophy, CheckCircle2
+  FileText, Trophy, CheckCircle2, MessageCircle
 } from 'lucide-react';
 
 interface VendorListProps {
@@ -122,6 +122,39 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
     </div>
   );
 
+  const formatCurrencyBR = (value: number) => {
+    if (!value) return '';
+    return value.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
+  const parseCurrencyBR = (raw: string) => {
+    const digits = raw.replace(/\D/g, '');
+    if (!digits) return 0;
+    const numberValue = Number(digits) / 100;
+    return Number.isFinite(numberValue) ? numberValue : 0;
+  };
+
+  const formatPhoneBR = (raw: string) => {
+    const digits = raw.replace(/\D/g, '').slice(0, 11);
+    if (digits.length <= 2) return digits ? `(${digits}` : '';
+    if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    if (digits.length <= 10) {
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+    }
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  };
+
+  const getWhatsappLink = (raw: string) => {
+    const digits = raw.replace(/\D/g, '');
+    if (!digits) return '';
+    const hasCountryCode = digits.length > 11;
+    const phone = hasCountryCode ? digits : `55${digits}`;
+    return `https://wa.me/${phone}`;
+  };
+
   return (
     <div className="pb-24 space-y-6">
       {/* Header com Total */}
@@ -135,16 +168,16 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
       </div>
 
       {/* Criar Novo Serviço */}
-      <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 flex gap-2">
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex gap-3">
         <input 
-            className="flex-1 p-3 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 outline-none min-w-0"
+          className="flex-1 p-4 border border-slate-300 rounded-xl text-base bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 outline-none min-w-0"
             placeholder="Novo item (ex: DJ, Lembrancinhas)..."
             value={newServiceName}
             onChange={e => setNewServiceName(e.target.value)}
         />
         <button 
             onClick={addService}
-            className="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700 shadow-sm shrink-0"
+          className="bg-brand-600 text-white px-4 py-3 rounded-xl text-base font-semibold hover:bg-brand-700 shadow-sm shrink-0 min-w-[52px]"
         >
             <Plus className="w-5 h-5" />
         </button>
@@ -165,7 +198,7 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                     
                     {/* Service Header Card */}
                     <div 
-                        className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 rounded-xl transition-colors select-none"
+                      className="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-slate-50 rounded-xl transition-colors select-none"
                         onClick={() => toggleExpand(service.id)}
                     >
                         <div className="flex-1 min-w-0 pr-2">
@@ -190,7 +223,7 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                              {isExpanded && (
                                 <button 
                                     onClick={(e) => { e.stopPropagation(); removeService(service.id); }}
-                                    className="text-slate-300 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors"
+                                  className="text-slate-300 hover:text-red-500 p-2.5 rounded-full hover:bg-red-50 transition-colors"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </button>
@@ -201,9 +234,9 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
 
                     {/* Expanded Content */}
                     {isExpanded && (
-                        <div className="p-3 sm:p-4 border-t border-slate-100 bg-slate-50/50 space-y-4 rounded-b-xl">
+                        <div className="p-4 sm:p-5 border-t border-slate-100 bg-slate-50/50 space-y-5 rounded-b-xl">
                             {service.options.length === 0 && (
-                                <div className="text-center py-4 text-slate-400 text-sm">
+                            <div className="text-center py-4 text-slate-400 text-base">
                                     Adicione fornecedores para comparar.
                                 </div>
                             )}
@@ -214,20 +247,20 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
 
                                 return (
                                     <div 
-                                        key={option.id} 
-                                        className={`relative bg-white p-3 rounded-xl border transition-all shadow-sm ${
+                                      key={option.id} 
+                                      className={`relative bg-white p-4 sm:p-5 rounded-2xl border transition-all shadow-sm ${
                                             isWinner ? 'border-green-500 ring-1 ring-green-500 shadow-md z-10' : 'border-slate-200'
                                         }`}
                                     >
                                         {/* Badges Overlay */}
                                         <div className="absolute -top-2 left-4 flex gap-2 z-10 pointer-events-none">
                                             {isBestPrice && (
-                                                <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm border border-green-200">
+                                            <span className="bg-green-100 text-green-700 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm border border-green-200">
                                                     Melhor Preço
                                                 </span>
                                             )}
                                             {isWinner && (
-                                                <span className="bg-brand-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center border border-brand-700">
+                                            <span className="bg-brand-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm flex items-center border border-brand-700">
                                                     <Trophy className="w-3 h-3 mr-1" />
                                                     Contratado
                                                 </span>
@@ -235,66 +268,80 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                                         </div>
 
                                         {/* Main Layout */}
-                                        <div className="flex gap-2 pt-2">
+                                        <div className="flex gap-3 pt-2">
                                             {/* Select Button Column */}
                                             <div className="pt-2">
                                                 <button 
                                                     onClick={() => selectWinner(service.id, option.id)}
-                                                    className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
+                                              className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${
                                                         isWinner 
                                                         ? 'border-brand-500 bg-brand-500 text-white shadow-sm' 
                                                         : 'border-slate-300 hover:border-brand-400 text-slate-300 hover:text-brand-400 bg-white'
                                                     }`}
                                                 >
-                                                    <CheckCircle2 className="w-5 h-5" />
+                                              <CheckCircle2 className="w-6 h-6" />
                                                 </button>
                                             </div>
 
                                             {/* Inputs Column - Added min-w-0 to prevent flex overflow */}
-                                            <div className="flex-1 space-y-2 min-w-0">
+                                            <div className="flex-1 space-y-3 min-w-0">
                                                 
                                                 {/* Row 1: Name & Price */}
-                                                <div className="flex flex-col sm:flex-row gap-2">
+                                              <div className="flex flex-col gap-3">
                                                     <input 
-                                                        className={`w-full p-2 border rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-brand-500 transition-colors ${isWinner ? 'font-bold text-slate-900 border-green-200 bg-green-50/30' : 'text-slate-700 border-slate-300'}`}
+                                                  className={`w-full p-3.5 border rounded-xl text-base bg-white outline-none focus:ring-2 focus:ring-brand-500 transition-colors ${isWinner ? 'font-bold text-slate-900 border-green-200 bg-green-50/30' : 'text-slate-700 border-slate-300'}`}
                                                         placeholder="Nome da Empresa"
                                                         value={option.name}
                                                         onChange={e => updateOption(service.id, option.id, 'name', e.target.value)}
                                                     />
-                                                    <div className="relative w-full sm:w-32">
-                                                        <span className="absolute left-2 top-2 text-slate-400 text-xs">R$</span>
+                                                <div className="relative w-full">
+                                                  <span className="absolute left-3 top-3 text-slate-400 text-sm">R$</span>
                                                         <input 
-                                                            type="number"
-                                                            className="w-full pl-6 p-2 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 font-semibold focus:ring-2 focus:ring-brand-500 outline-none"
-                                                            placeholder="0,00"
-                                                            value={option.quote || ''}
-                                                            onChange={e => updateOption(service.id, option.id, 'quote', parseFloat(e.target.value))}
+                                                          type="text"
+                                                          inputMode="decimal"
+                                                          className="w-full pl-8 p-3.5 border border-slate-300 rounded-xl text-base bg-white text-slate-900 font-semibold focus:ring-2 focus:ring-brand-500 outline-none"
+                                                          placeholder="0,00"
+                                                          value={formatCurrencyBR(option.quote)}
+                                                          onChange={e => updateOption(service.id, option.id, 'quote', parseCurrencyBR(e.target.value))}
                                                         />
                                                     </div>
                                                 </div>
 
                                                 {/* Row 2: Contact & Rating - Flex wrap enabled */}
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <div className="relative flex-1 min-w-[140px]">
-                                                        <Phone className="absolute left-2 top-2.5 w-3 h-3 text-slate-400" />
+                                              <div className="flex flex-col gap-3">
+                                                <div className="relative w-full">
+                                                  <Phone className="absolute left-3 top-4 w-4 h-4 text-slate-400" />
                                                         <input 
-                                                            className="w-full pl-7 p-2 border border-slate-300 rounded-lg text-xs bg-white text-slate-600 focus:ring-2 focus:ring-brand-500 outline-none truncate"
-                                                            placeholder="Contato / Telefone"
-                                                            value={option.contact}
-                                                            onChange={e => updateOption(service.id, option.id, 'contact', e.target.value)}
+                                                          className="w-full pl-10 p-3.5 border border-slate-300 rounded-xl text-base bg-white text-slate-600 focus:ring-2 focus:ring-brand-500 outline-none"
+                                                          placeholder="Contato / Telefone"
+                                                          inputMode="tel"
+                                                          value={formatPhoneBR(option.contact)}
+                                                          onChange={e => updateOption(service.id, option.id, 'contact', formatPhoneBR(e.target.value))}
                                                         />
+                                                  {option.contact && (
+                                                    <a
+                                                      href={getWhatsappLink(option.contact)}
+                                                      target="_blank"
+                                                      rel="noreferrer"
+                                                      className="absolute right-2 top-2.5 inline-flex items-center gap-1 bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-emerald-600 transition-colors"
+                                                      title="Abrir WhatsApp"
+                                                    >
+                                                      <MessageCircle className="w-4 h-4" />
+                                                      WhatsApp
+                                                    </a>
+                                                  )}
                                                     </div>
-                                                    <div className="bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-200 shrink-0">
+                                                <div className="bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 w-full">
                                                         {renderStars(service.id, option.id, option.rating)}
                                                     </div>
                                                 </div>
 
                                                 {/* Row 3: Notes */}
                                                 <div className="relative">
-                                                    <FileText className="absolute left-2 top-2.5 w-3 h-3 text-slate-300" />
+                                                <FileText className="absolute left-3 top-4 w-4 h-4 text-slate-300" />
                                                     <textarea 
-                                                        className="w-full pl-7 p-2 border border-slate-300 rounded-lg text-xs bg-white text-slate-600 focus:ring-2 focus:ring-brand-500 outline-none resize-none"
-                                                        rows={1}
+                                                  className="w-full pl-10 p-3.5 border border-slate-300 rounded-xl text-base bg-white text-slate-600 focus:ring-2 focus:ring-brand-500 outline-none resize-none"
+                                                  rows={2}
                                                         placeholder="Observações..."
                                                         value={option.notes || ''}
                                                         onChange={e => updateOption(service.id, option.id, 'notes', e.target.value)}
@@ -306,9 +353,9 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                                             <div className="pt-2">
                                                 <button 
                                                     onClick={() => removeOption(service.id, option.id)}
-                                                    className="p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                                 >
-                                                    <Trash2 className="w-4 h-4" />
+                                                <Trash2 className="w-5 h-5" />
                                                 </button>
                                             </div>
                                         </div>
@@ -318,7 +365,7 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
 
                             <button 
                                 onClick={() => addOptionToService(service.id)}
-                                className="w-full py-3 flex items-center justify-center text-sm font-medium text-brand-600 bg-white border border-dashed border-brand-300 rounded-xl hover:bg-brand-50 hover:border-brand-400 transition-all shadow-sm active:scale-[0.99]"
+                                      className="w-full py-4 flex items-center justify-center text-base font-semibold text-brand-600 bg-white border border-dashed border-brand-300 rounded-2xl hover:bg-brand-50 hover:border-brand-400 transition-all shadow-sm active:scale-[0.99]"
                             >
                                 <Plus className="w-4 h-4 mr-2" />
                                 Adicionar Concorrente
