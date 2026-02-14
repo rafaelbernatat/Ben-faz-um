@@ -8,33 +8,41 @@
     <meta name="theme-color" content="#0ea5e9" />
     <title>Planejador do Ben</title>
     
-    <!-- SISTEMA DE LOGS DE EMERGÊNCIA -->
+    <!-- DIAGNÓSTICO AVANÇADO NA TELA -->
     <script>
       (function() {
-        const logError = (msg, source, lineno, colno, error) => {
+        const errors = [];
+        const logToScreen = (msg) => {
+          errors.push(msg);
+          console.error("DIAGNOSTICO:", msg);
           const root = document.getElementById('root');
           if (root) {
+            root.style.display = "block";
             root.style.padding = "20px";
-            root.style.color = "red";
-            root.style.fontSize = "12px";
-            root.style.fontFamily = "monospace";
-            root.style.whiteSpace = "pre-wrap";
-            root.style.background = "#fff5f5";
+            root.style.background = "#fff";
             root.innerHTML = `
-              <h2 style="color: #c53030; margin-bottom: 10px;">❌ Erro de Inicialização:</h2>
-              <p><b>Mensagem:</b> ${msg}</p>
-              <p><b>Arquivo:</b> ${source}:${lineno}:${colno}</p>
-              <p><b>Detalhes:</b> ${error ? error.stack : 'Nenhum detalhe adicional'}</p>
-              <hr style="margin: 15px 0; border: 0; border-top: 1px solid #feb2b2;"/>
-              <p style="color: #718096">Tente abrir em aba anônima para limpar o cache da Vercel.</p>
+              <div style="border: 2px solid #ef4444; padding: 20px; border-radius: 12px; font-family: sans-serif;">
+                <h2 style="color: #ef4444; margin-top: 0;">❌ Erro no Carregamento</h2>
+                <p style="color: #64748b; font-size: 14px;">O app não conseguiu iniciar na Vercel. Detalhes:</p>
+                <pre style="background: #f1f5f9; padding: 10px; border-radius: 6px; font-size: 12px; overflow: auto; max-height: 200px;">${errors.join('\n')}</pre>
+                <div style="margin-top: 20px;">
+                  <button onclick="window.location.reload(true)" style="background: #0ea5e9; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;">Tentar Recarregar</button>
+                  <p style="font-size: 11px; color: #94a3b8; margin-top: 10px;">Dica: Tente abrir em uma <b>Aba Anônima</b> se o erro persistir.</p>
+                </div>
+              </div>
             `;
           }
-          return false;
         };
-        window.onerror = logError;
-        window.addEventListener('unhandledrejection', event => {
-          logError('Promessa Rejeitada: ' + event.reason);
-        });
+
+        window.onerror = (m, s, l, c, e) => logToScreen(`Erro: ${m} em ${s}:${l}`);
+        window.onunhandledrejection = (e) => logToScreen(`Rejeição: ${e.reason}`);
+
+        // Se após 12 segundos o React não marcou o app como pronto, avisa o usuário.
+        setTimeout(() => {
+          if (!window.__APP_READY__) {
+            logToScreen("O sistema demorou demais para responder (Timeout de 12s). Verifique se há bloqueios de rede ou scripts.");
+          }
+        }, 12000);
       })();
     </script>
 
@@ -71,9 +79,7 @@
       @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 
-    <script>
-      window.process = { env: { NODE_ENV: 'production' } };
-    </script>
+    <script>window.process = { env: { NODE_ENV: 'production' } };</script>
 
     <script type="importmap">
     {
@@ -92,8 +98,8 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- Carregamento via ESM.SH Runner -->
-    <script type="module" src="https://esm.sh/run@0.1.0"></script>
+    <!-- Script runner oficial do ESM.sh -->
+    <script type="module" src="https://esm.sh/run"></script>
     <script type="text/tsx" src="./index.tsx"></script>
   </body>
 </html>

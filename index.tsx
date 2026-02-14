@@ -18,9 +18,12 @@ try {
   console.log('🚀 [Boot] Renderizando App...');
   root.render(<App />);
   
-  console.log('✅ [Boot] Sistema montado com sucesso (React 18.2.0)');
-} catch (error) {
-  console.error('💥 [Boot] Erro fatal durante a renderização:', error);
-  // Garante que o erro apareça na tela se o index.html não capturar
-  rootElement.innerHTML = `<div style="color:red; padding:20px;">Erro Fatal React: ${error.message}</div>`;
+  // Marca como carregado com sucesso para o index.html parar o timeout
+  (window as any).__APP_READY__ = true;
+  console.log('✅ [Boot] Sistema montado com sucesso');
+} catch (error: any) {
+  console.error('💥 [Boot] Erro fatal:', error);
+  rootElement.innerHTML = `<div style="color:red; padding:20px; border:2px solid red; margin:20px; border-radius:8px;">
+    <b>Erro Fatal React:</b><br>${error.message || error}
+  </div>`;
 }
