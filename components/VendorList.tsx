@@ -202,9 +202,9 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
       </div>
 
       {/* Criar Novo Serviço */}
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex gap-3">
+      <div className="bg-white dark:bg-slate-900/90 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex gap-3">
         <input
-          className="flex-1 p-4 border border-slate-300 rounded-xl text-base bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 outline-none min-w-0"
+          className="flex-1 p-4 border border-slate-300 dark:border-slate-600 rounded-xl text-base bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-brand-500 outline-none min-w-0"
           placeholder="Novo item (ex: DJ, Lembrancinhas)..."
           value={newServiceName}
           onChange={(e) => setNewServiceName(e.target.value)}
@@ -237,22 +237,22 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
           return (
             <div
               key={service.id}
-              className={`bg-white rounded-xl shadow-sm border transition-all ${winner ? "border-brand-200 ring-1 ring-brand-50" : "border-slate-200"}`}
+              className={`bg-white dark:bg-slate-900/90 rounded-xl shadow-sm border transition-all ${winner ? "border-brand-200 dark:border-brand-500/40 ring-1 ring-brand-50 dark:ring-brand-500/20" : "border-slate-200 dark:border-slate-700"}`}
             >
               {/* Service Header Card */}
               <div
-                className="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-slate-50 rounded-xl transition-colors select-none"
+                className="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors select-none"
                 onClick={() => toggleExpand(service.id)}
               >
                 <div className="flex-1 min-w-0 pr-2">
                   <h3
-                    className={`font-bold text-lg truncate ${winner ? "text-brand-700" : "text-slate-700"}`}
+                    className={`font-bold text-lg truncate ${winner ? "text-brand-700 dark:text-brand-300" : "text-slate-700 dark:text-slate-100"}`}
                   >
                     {service.name}
                   </h3>
                   <div className="flex items-center mt-1">
                     {winner ? (
-                      <span className="inline-flex items-center text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full truncate max-w-full">
+                      <span className="inline-flex items-center text-xs font-medium text-green-700 dark:text-green-200 bg-green-100 dark:bg-green-900/40 px-2 py-0.5 rounded-full truncate max-w-full">
                         <CheckCircle2 className="w-3 h-3 mr-1 shrink-0" />
                         <span className="truncate">{winner.name}</span>
                         <span className="ml-1 shrink-0">
@@ -260,7 +260,7 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                         </span>
                       </span>
                     ) : (
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-slate-400 dark:text-slate-300">
                         {service.options.length} orçamentos
                       </span>
                     )}
@@ -273,24 +273,24 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                         e.stopPropagation();
                         removeService(service.id);
                       }}
-                      className="text-slate-300 hover:text-red-500 p-2.5 rounded-full hover:bg-red-50 transition-colors"
+                      className="text-slate-300 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 p-2.5 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   )}
                   {isExpanded ? (
-                    <ChevronUp className="w-5 h-5 text-slate-400" />
+                    <ChevronUp className="w-5 h-5 text-slate-400 dark:text-slate-300" />
                   ) : (
-                    <ChevronDown className="w-5 h-5 text-slate-400" />
+                    <ChevronDown className="w-5 h-5 text-slate-400 dark:text-slate-300" />
                   )}
                 </div>
               </div>
 
               {/* Expanded Content */}
               {isExpanded && (
-                <div className="p-4 sm:p-5 border-t border-slate-100 bg-slate-50/50 space-y-5 rounded-b-xl">
+                <div className="p-4 sm:p-5 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/70 space-y-5 rounded-b-xl">
                   {service.options.length === 0 && (
-                    <div className="text-center py-4 text-slate-400 text-base">
+                    <div className="text-center py-4 text-slate-400 dark:text-slate-300 text-base">
                       Adicione fornecedores para comparar.
                     </div>
                   )}
@@ -303,16 +303,16 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                     return (
                       <div
                         key={option.id}
-                        className={`relative bg-white p-4 sm:p-5 rounded-2xl border transition-all shadow-sm ${
+                        className={`relative bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border transition-all shadow-sm ${
                           isWinner
-                            ? "border-green-500 ring-1 ring-green-500 shadow-md z-10"
-                            : "border-slate-200"
+                            ? "border-green-500 ring-1 ring-green-500/80 shadow-md z-10"
+                            : "border-slate-200 dark:border-slate-700"
                         }`}
                       >
                         {/* Badges Overlay */}
                         <div className="absolute -top-2 left-4 flex gap-2 z-10 pointer-events-none">
                           {isBestPrice && (
-                            <span className="bg-green-100 text-green-700 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm border border-green-200">
+                            <span className="bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-200 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm border border-green-200 dark:border-green-700">
                               Melhor Preço
                             </span>
                           )}
@@ -335,7 +335,7 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                               className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${
                                 isWinner
                                   ? "border-brand-500 bg-brand-500 text-white shadow-sm"
-                                  : "border-slate-300 hover:border-brand-400 text-slate-300 hover:text-brand-400 bg-white"
+                                  : "border-slate-300 dark:border-slate-600 hover:border-brand-400 text-slate-300 dark:text-slate-500 hover:text-brand-400 bg-white dark:bg-slate-800"
                               }`}
                             >
                               <CheckCircle2 className="w-6 h-6" />
@@ -347,7 +347,7 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                             {/* Row 1: Name & Price */}
                             <div className="flex flex-col gap-3">
                               <input
-                                className={`w-full p-3.5 border rounded-xl text-base bg-white outline-none focus:ring-2 focus:ring-brand-500 transition-colors ${isWinner ? "font-bold text-slate-900 border-green-200 bg-green-50/30" : "text-slate-700 border-slate-300"}`}
+                                className={`w-full p-3.5 border rounded-xl text-base bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-brand-500 transition-colors ${isWinner ? "font-bold text-slate-900 dark:text-slate-100 border-green-200 dark:border-green-700 bg-green-50/30 dark:bg-green-900/20" : "text-slate-700 dark:text-slate-100 border-slate-300 dark:border-slate-600"}`}
                                 placeholder="Nome da Empresa"
                                 value={option.name}
                                 onChange={(e) =>
@@ -360,13 +360,13 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                                 }
                               />
                               <div className="relative w-full">
-                                <span className="absolute left-3 top-3 text-slate-400 text-sm">
+                                <span className="absolute left-3 top-3 text-slate-400 dark:text-slate-500 text-sm">
                                   R$
                                 </span>
                                 <input
                                   type="text"
                                   inputMode="decimal"
-                                  className="w-full pl-8 p-3.5 border border-slate-300 rounded-xl text-base bg-white text-slate-900 font-semibold focus:ring-2 focus:ring-brand-500 outline-none"
+                                  className="w-full pl-8 p-3.5 border border-slate-300 dark:border-slate-600 rounded-xl text-base bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold focus:ring-2 focus:ring-brand-500 outline-none"
                                   placeholder="0,00"
                                   value={formatCurrencyBR(option.quote)}
                                   onChange={(e) =>
@@ -384,9 +384,9 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                             {/* Row 2: Contact & Rating - Flex wrap enabled */}
                             <div className="flex flex-col gap-3">
                               <div className="relative w-full">
-                                <Phone className="absolute left-3 top-4 w-4 h-4 text-slate-400" />
+                                <Phone className="absolute left-3 top-4 w-4 h-4 text-slate-400 dark:text-slate-500" />
                                 <input
-                                  className="w-full pl-10 p-3.5 border border-slate-300 rounded-xl text-base bg-white text-slate-600 focus:ring-2 focus:ring-brand-500 outline-none"
+                                  className="w-full pl-10 p-3.5 border border-slate-300 dark:border-slate-600 rounded-xl text-base bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-200 focus:ring-2 focus:ring-brand-500 outline-none"
                                   placeholder="Contato / Telefone"
                                   inputMode="tel"
                                   value={formatPhoneBR(option.contact)}
@@ -412,7 +412,7 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                                   Abrir WhatsApp
                                 </a>
                               )}
-                              <div className="bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 w-full">
+                              <div className="bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 w-full">
                                 {renderStars(
                                   service.id,
                                   option.id,
@@ -423,9 +423,9 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
 
                             {/* Row 3: Notes */}
                             <div className="relative">
-                              <FileText className="absolute left-3 top-4 w-4 h-4 text-slate-300" />
+                              <FileText className="absolute left-3 top-4 w-4 h-4 text-slate-300 dark:text-slate-500" />
                               <textarea
-                                className="w-full pl-10 p-3.5 border border-slate-300 rounded-xl text-base bg-white text-slate-600 focus:ring-2 focus:ring-brand-500 outline-none resize-none"
+                                className="w-full pl-10 p-3.5 border border-slate-300 dark:border-slate-600 rounded-xl text-base bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-200 focus:ring-2 focus:ring-brand-500 outline-none resize-none"
                                 rows={2}
                                 placeholder="Observações..."
                                 value={option.notes || ""}
@@ -447,7 +447,7 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                               onClick={() =>
                                 removeOption(service.id, option.id)
                               }
-                              className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-2 text-slate-300 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                             >
                               <Trash2 className="w-5 h-5" />
                             </button>
@@ -459,7 +459,7 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
 
                   <button
                     onClick={() => addOptionToService(service.id)}
-                    className="w-full py-4 flex items-center justify-center text-base font-semibold text-brand-600 bg-white border border-dashed border-brand-300 rounded-2xl hover:bg-brand-50 hover:border-brand-400 transition-all shadow-sm active:scale-[0.99]"
+                    className="w-full py-4 flex items-center justify-center text-base font-semibold text-brand-600 dark:text-brand-300 bg-white dark:bg-slate-800 border border-dashed border-brand-300 dark:border-brand-600/40 rounded-2xl hover:bg-brand-50 dark:hover:bg-slate-700 hover:border-brand-400 transition-all shadow-sm active:scale-[0.99]"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Adicionar Concorrente
@@ -471,7 +471,7 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
         })}
 
         {(!data.vendorServices || data.vendorServices.length === 0) && (
-          <div className="text-center py-12 text-slate-400 bg-white rounded-xl border border-dashed border-slate-300">
+          <div className="text-center py-12 text-slate-400 dark:text-slate-300 bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
             <Trophy className="w-12 h-12 mx-auto mb-3 opacity-20" />
             <p>Crie um item (ex: Buffet) para começar a orçar.</p>
           </div>

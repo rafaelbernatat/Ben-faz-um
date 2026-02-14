@@ -19,6 +19,8 @@ interface SettingsProps {
   onUpdate: (data: AppData) => void;
   theme: "light" | "dark";
   onThemeChange: (theme: "light" | "dark") => void;
+  userEmail: string;
+  onSignOut: () => void;
 }
 
 const Settings: React.FC<SettingsProps> = ({
@@ -26,6 +28,8 @@ const Settings: React.FC<SettingsProps> = ({
   onUpdate,
   theme,
   onThemeChange,
+  userEmail,
+  onSignOut,
 }) => {
   const [firebaseUrl] = useState(
     localStorage.getItem("fb_url") ||
@@ -232,6 +236,21 @@ const Settings: React.FC<SettingsProps> = ({
         <h2 className="text-xl font-bold text-slate-800">
           ⚙️ Cantinho dos Ajustes
         </h2>
+      </div>
+
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+            Conta conectada
+          </p>
+          <p className="text-sm text-slate-700 truncate">{userEmail}</p>
+        </div>
+        <button
+          onClick={onSignOut}
+          className="px-3 py-2 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+        >
+          Sair
+        </button>
       </div>
 
       {/* GitHub Sync Section */}

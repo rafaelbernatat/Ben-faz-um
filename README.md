@@ -83,14 +83,35 @@ vercel --prod
 
 ## 🔧 Configuração do Firebase
 
-O projeto está configurado para usar Firebase Realtime Database. Para usar seu próprio banco:
+O app usa Firebase Realtime Database + Google Auth.
 
 1. Crie um projeto no [Firebase Console](https://console.firebase.google.com)
-2. Ative o Realtime Database
-3. Atualize a URL no arquivo [App.tsx](App.tsx#L11):
+2. Ative o **Authentication > Google**
+3. Ative o **Realtime Database**
+4. Preencha o arquivo `.env` com base no `.env.example`
 
-```typescript
-const FIREBASE_URL = 'https://seu-projeto.firebaseio.com/eventData.json';
+Exemplo de `.env`:
+
+```bash
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_APP_ID=...
+VITE_FIREBASE_DATABASE_URL=https://seu-projeto-default-rtdb.firebaseio.com
+VITE_ALLOWED_EMAILS=seuemail@gmail.com,esposa@gmail.com
+```
+
+### Regras recomendadas (Realtime Database)
+
+No console do Realtime Database, configure regras para permitir acesso apenas a dois UIDs:
+
+```json
+{
+  "rules": {
+    ".read": "auth != null && (auth.uid === 'UID_1' || auth.uid === 'UID_2')",
+    ".write": "auth != null && (auth.uid === 'UID_1' || auth.uid === 'UID_2')"
+  }
+}
 ```
 
 ## 🎨 Personalização
@@ -102,16 +123,23 @@ tailwind.config = {
   theme: {
     extend: {
       colors: {
-        brand: { 50: '#f0f9ff', 100: '#e0f2fe', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1' }
-      }
-    }
-  }
-}
+        brand: {
+          50: "#f0f9ff",
+          100: "#e0f2fe",
+          500: "#0ea5e9",
+          600: "#0284c7",
+          700: "#0369a1",
+        },
+      },
+    },
+  },
+};
 ```
 
 ## 📱 PWA Ready
 
 O aplicativo está otimizado para dispositivos móveis com:
+
 - Viewport configurado para mobile
 - Meta tags para iOS
 - Theme color para browsers
