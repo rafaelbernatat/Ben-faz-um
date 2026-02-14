@@ -61,20 +61,34 @@
         box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
         font-family: system-ui, sans-serif;
       }
+      .debug-msg { font-size: 10px; color: #94a3b8; margin-top: 10px; }
     </style>
 
     <script>
       window.process = { env: { NODE_ENV: 'production' } };
+      
+      // Monitor de carga: Se em 8 segundos o root ainda estiver vazio, algo deu errado
+      setTimeout(() => {
+        const root = document.getElementById('root');
+        if (root && root.innerHTML === "") {
+          console.error("⏳ Timeout de carregamento atingido.");
+          const errDiv = document.getElementById('critical-error');
+          if (errDiv) {
+            errDiv.style.display = 'block';
+            errDiv.innerHTML = `
+              <div class="text-center">
+                <h1 style="color:#ef4444;font-weight:bold;font-size:18px;margin-bottom:12px">O app está demorando a responder</h1>
+                <p style="font-size:14px;color:#475569;margin-bottom:20px">Isso pode ser um problema de conexão ou cache do navegador.</p>
+                <button onclick="window.location.reload(true)" style="background:#0ea5e9;color:white;padding:12px 24px;border-radius:12px;font-weight:bold;border:none">Tentar Recarregar</button>
+                <p class="debug-msg">Verifique o console para detalhes técnicos.</p>
+              </div>
+            `;
+          }
+        }
+      }, 8000);
+
       window.onerror = function(msg, url, line) {
         console.error("Runtime Error:", msg, "at", url, ":", line);
-        const errDiv = document.getElementById('critical-error');
-        if (errDiv) {
-          errDiv.style.display = 'block';
-          errDiv.innerHTML = `<h1 style="color:#ef4444;font-weight:bold;margin-bottom:8px">Erro de Inicialização</h1><p>${msg}</p><small style="color:#64748b">${url}:${line}</small>`;
-        }
-      };
-      window.onunhandledrejection = function(event) {
-        console.error("Unhandled Promise Rejection:", event.reason);
       };
     </script>
 
@@ -97,7 +111,8 @@
     <div id="critical-error"></div>
     <div id="root"></div>
 
+    <!-- Carregador ESM ultra-rápido -->
     <script type="module" src="https://esm.sh/run"></script>
-    <script type="text/tsx" src="./index.tsx"></script>
+    <script type="text/tsx" src="index.tsx"></script>
   </body>
 </html>

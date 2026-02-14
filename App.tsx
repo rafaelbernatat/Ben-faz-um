@@ -25,43 +25,41 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const initData = async () => {
+      console.log("⚡ Inicializando dados...");
       setSyncStatus('fetching');
       
-      // 1. CARREGAMENTO INSTANTÂNEO (CACHE)
-      // Se tivermos dados salvos, mostramos eles imediatamente. 
-      // Isso mata o problema do "carregando infinito" se a rede falhar.
+      // 1. CARREGAR DO CACHE (INSTANTÂNEO)
       const saved = localStorage.getItem(STORAGE_KEY);
+      let hasCache = false;
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
           setData(parsed);
-          setLoading(false); // Libera a tela AGORA
+          setLoading(false); // Mostra a interface imediatamente se tiver cache
+          hasCache = true;
+          console.log("✅ Cache carregado");
         } catch(e) {
-          console.error("Erro no parse do cache");
+          console.warn("❌ Cache inválido");
         }
       }
 
-      // 2. SINCRONIZAÇÃO EM SEGUNDO PLANO
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000); // Timeout de 4 segundos
-
+      // 2. SINCRONIZAÇÃO EM SEGUNDO PLANO (Não bloqueia o usuário)
       try {
-        const response = await fetch(FIREBASE_URL, { signal: controller.signal });
+        const response = await fetch(FIREBASE_URL);
         if (response.ok) {
           const remoteData = await response.json();
           if (remoteData) {
             setData(remoteData);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteData));
+            console.log("✅ Dados sincronizados com a nuvem");
           }
         }
       } catch (e) {
-        console.warn("Modo Offline: Firebase não respondeu a tempo.");
+        console.warn("⚠️ Firebase Offline. Continuando em modo local.");
       } finally {
-        clearTimeout(timeoutId);
-        setLoading(false); // Garante que o loading saia de qualquer jeito
+        setLoading(false); // Garante a saída do loading mesmo se não tiver cache
         setSyncStatus('idle');
-        // Pequeno atraso para o React registrar que a montagem terminou
-        setTimeout(() => { isInitialMount.current = false; }, 200);
+        isInitialMount.current = false;
       }
     };
     initData();
@@ -78,12 +76,13 @@ const App: React.FC = () => {
           method: 'PUT',
           body: JSON.stringify(dataRef.current)
         });
+        console.log("☁️ Alterações salvas na nuvem");
       } catch (e) {
-        console.error("Falha ao sincronizar alterações");
+        console.error("❌ Falha no salvamento remoto");
       } finally {
         setSyncStatus('idle');
       }
-    }, 2000);
+    }, 3000); // Aguarda 3 segundos de inatividade para salvar
 
     return () => clearTimeout(timer);
   }, [data, loading]);
@@ -96,7 +95,7 @@ const App: React.FC = () => {
   if (loading) return (
     <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-50">
       <div className="w-10 h-10 border-4 border-slate-200 border-t-brand-600 rounded-full animate-spin mb-4"></div>
-      <p className="text-slate-500 font-medium text-sm animate-pulse">Acessando organizador...</p>
+      <p className="text-slate-500 font-medium text-sm animate-pulse">Sincronizando organizador...</p>
     </div>
   );
 
