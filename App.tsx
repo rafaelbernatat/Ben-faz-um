@@ -24,11 +24,17 @@ const App: React.FC = () => {
     dataRef.current = data;
   }, [data]);
 
+  // Busca inicial com timeout para evitar loading infinito
   useEffect(() => {
     const initData = async () => {
       setSyncStatus('fetching');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos de limite
+
       try {
-        const response = await fetch(FIREBASE_URL);
+        const response = await fetch(FIREBASE_URL, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
         if (response.ok) {
           const remoteData = await response.json();
           if (remoteData) {
@@ -38,10 +44,19 @@ const App: React.FC = () => {
             const saved = localStorage.getItem(STORAGE_KEY);
             if (saved) setData(JSON.parse(saved));
           }
+        } else {
+          throw new Error('Response not ok');
         }
       } catch (e) {
+        console.warn("Usando dados locais (Firebase inacessível ou timeout)");
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) setData(JSON.parse(saved));
+        if (saved) {
+          try {
+            setData(JSON.parse(saved));
+          } catch (parseError) {
+            setData(DEFAULT_DATA);
+          }
+        }
       } finally {
         setLoading(false);
         setSyncStatus('idle');
@@ -51,8 +66,9 @@ const App: React.FC = () => {
     initData();
   }, []);
 
+  // Autosave
   useEffect(() => {
-    if (isInitialMount.current) return;
+    if (isInitialMount.current || loading) return;
 
     const timer = setTimeout(async () => {
       setSyncStatus('saving');
@@ -62,18 +78,21 @@ const App: React.FC = () => {
           body: JSON.stringify(data)
         });
       } catch (e) {
-        console.error("Erro ao salvar");
+        console.error("Erro ao salvar no Firebase");
       } finally {
         setSyncStatus('idle');
       }
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [data]);
+  }, [data, loading]);
 
+  // Polling para atualizações remotas
   useEffect(() => {
     const interval = setInterval(async () => {
-      if (Date.now() - lastChangeTime.current < 5000) return;
+      if (loading) return;
+      if (Date.now() - lastChangeTime.current < 8000) return; // Evita conflito enquanto o usuário digita
+      
       try {
         const response = await fetch(FIREBASE_URL);
         if (response.ok) {
@@ -84,9 +103,9 @@ const App: React.FC = () => {
           }
         }
       } catch (e) {}
-    }, 10000);
+    }, 15000);
     return () => clearInterval(interval);
-  }, []);
+  }, [loading]);
 
   const updateData = (newData: AppData) => {
     lastChangeTime.current = Date.now();
@@ -96,14 +115,14 @@ const App: React.FC = () => {
 
   if (loading) return (
     <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-50">
-      <div className="w-12 h-12 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin mb-4"></div>
-      <p className="text-slate-500 font-medium animate-pulse">Sincronizando festa...</p>
+      <div className="w-10 h-10 border-4 border-slate-200 border-t-brand-600 rounded-full animate-spin mb-4"></div>
+      <p className="text-slate-500 font-medium text-sm animate-pulse italic">Organizando os dinossauros...</p>
     </div>
   );
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
-      <div className="h-1 w-full bg-slate-100 fixed top-0 z-[60] overflow-hidden">
+      <div className="h-1.5 w-full bg-slate-100 fixed top-0 z-[60] overflow-hidden">
         {syncStatus === 'saving' && <div className="h-full bg-brand-500 animate-pulse w-full"></div>}
         {syncStatus === 'fetching' && <div className="h-full bg-green-500 animate-[loading_1s_infinite] w-1/3"></div>}
       </div>
