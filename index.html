@@ -8,6 +8,36 @@
     <meta name="theme-color" content="#0ea5e9" />
     <title>Planejador do Ben</title>
     
+    <!-- SISTEMA DE LOGS DE EMERGÊNCIA -->
+    <script>
+      (function() {
+        const logError = (msg, source, lineno, colno, error) => {
+          const root = document.getElementById('root');
+          if (root) {
+            root.style.padding = "20px";
+            root.style.color = "red";
+            root.style.fontSize = "12px";
+            root.style.fontFamily = "monospace";
+            root.style.whiteSpace = "pre-wrap";
+            root.style.background = "#fff5f5";
+            root.innerHTML = `
+              <h2 style="color: #c53030; margin-bottom: 10px;">❌ Erro de Inicialização:</h2>
+              <p><b>Mensagem:</b> ${msg}</p>
+              <p><b>Arquivo:</b> ${source}:${lineno}:${colno}</p>
+              <p><b>Detalhes:</b> ${error ? error.stack : 'Nenhum detalhe adicional'}</p>
+              <hr style="margin: 15px 0; border: 0; border-top: 1px solid #feb2b2;"/>
+              <p style="color: #718096">Tente abrir em aba anônima para limpar o cache da Vercel.</p>
+            `;
+          }
+          return false;
+        };
+        window.onerror = logError;
+        window.addEventListener('unhandledrejection', event => {
+          logError('Promessa Rejeitada: ' + event.reason);
+        });
+      })();
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -62,7 +92,8 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="https://esm.sh/run"></script>
+    <!-- Carregamento via ESM.SH Runner -->
+    <script type="module" src="https://esm.sh/run@0.1.0"></script>
     <script type="text/tsx" src="./index.tsx"></script>
   </body>
 </html>
