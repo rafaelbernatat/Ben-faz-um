@@ -2,14 +2,21 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 
+console.log('🚀 Iniciando renderização do app...');
+
 const rootElement = document.getElementById('root');
 if (!rootElement) {
-  throw new Error("Could not find root element to mount to");
+  console.error("❌ Elemento root não encontrado");
+} else {
+  try {
+    const root = createRoot(rootElement);
+    root.render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    );
+    console.log('✅ App montado com sucesso');
+  } catch (err) {
+    console.error('❌ Erro ao renderizar o React:', err);
+  }
 }
-
-const root = createRoot(rootElement);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);

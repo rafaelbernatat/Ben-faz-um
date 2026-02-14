@@ -29,7 +29,7 @@
     </script>
 
     <style>
-      body { -webkit-tap-highlight-color: transparent; }
+      body { -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
@@ -67,16 +67,12 @@
         padding: 20px;
         border-radius: 16px;
         z-index: 9999;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-family: monospace;
         font-size: 13px;
-        line-height: 1.5;
-        box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
-        max-height: 80vh;
-        overflow-y: auto;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
       }
     </style>
 
-    <!-- Shim para compatibilidade de bibliotecas -->
     <script>
       window.process = { env: { NODE_ENV: 'production' } };
     </script>
@@ -102,20 +98,13 @@
 
     <script>
       const display = document.getElementById('error-display');
-      
       window.onerror = function(msg, url, line, col, error) {
         display.style.display = 'block';
-        display.innerHTML = `<strong>ERRO DE EXECUÇÃO:</strong><br>${msg}<br><br><small>Arquivo: ${url}:${line}:${col}</small>`;
+        display.innerHTML = `<strong>ERRO:</strong><br>${msg}<br><br><small>${url}:${line}</small>`;
         return false;
       };
-      
-      window.addEventListener('unhandledrejection', function(event) {
-        display.style.display = 'block';
-        display.innerHTML = `<strong>ERRO DE REDE/MÓDULO:</strong><br>${event.reason}`;
-      });
     </script>
 
-    <!-- Loader estável -->
     <script type="module" src="https://esm.sh/run"></script>
     <script type="text/tsx" src="./index.tsx"></script>
   </body>
