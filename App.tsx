@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { FirebaseError } from "firebase/app";
 import { AppData, ViewState } from "./types";
 import { DEFAULT_DATA, STORAGE_KEY } from "./constants";
 import {
@@ -16,6 +17,13 @@ import BottomNav from "./components/BottomNav";
 import { auth, getDatabaseRestUrl, googleProvider } from "./firebase";
 
 const THEME_STORAGE_KEY = "theme_mode";
+const REQUIRED_FIREBASE_ENV_VARS = [
+  "VITE_FIREBASE_API_KEY",
+  "VITE_FIREBASE_AUTH_DOMAIN",
+  "VITE_FIREBASE_PROJECT_ID",
+  "VITE_FIREBASE_APP_ID",
+  "VITE_FIREBASE_DATABASE_URL",
+] as const;
 const ALLOWED_EMAILS = (import.meta.env.VITE_ALLOWED_EMAILS || "")
   .split(",")
   .map((email: string) => email.trim().toLowerCase())
@@ -45,23 +53,39 @@ const App: React.FC = () => {
   const isInitialMount = useRef(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
-      if (user && ALLOWED_EMAILS.length > 0) {
-        const email = user.email?.toLowerCase() || "";
-        if (!ALLOWED_EMAILS.includes(email)) {
-          await signOut(auth);
-          setAuthUser(null);
-          setAuthError("Este e-mail não tem permissão para acessar este app.");
-          setAuthLoading(false);
-          return;
-        }
+    // Timer de segurança: se authLoading não resolver em 10s, força false
+    const safetyTimeout = setTimeout(() => {
+      if (authLoading) {
+        console.warn("AuthLoading timeout - forçando false");
+        setAuthLoading(false);
       }
+    }, 10000);
 
-      setAuthUser(user);
-      setAuthLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
+      try {
+        if (user && ALLOWED_EMAILS.length > 0) {
+          const email = user.email?.toLowerCase() || "";
+          if (!ALLOWED_EMAILS.includes(email)) {
+            await signOut(auth);
+            setAuthUser(null);
+            setAuthError("Este e-mail não tem permissão para acessar este app.");
+            setAuthLoading(false);
+            return;
+          }
+        }
+
+        setAuthUser(user);
+        setAuthLoading(false);
+      } catch (error) {
+        console.error("Erro no onAuthStateChanged:", error);
+        setAuthLoading(false);
+      }
     });
 
-    return unsubscribe;
+    return () => {
+      clearTimeout(safetyTimeout);
+      unsubscribe();
+    };
   }, []);
 
   // Inicialização
@@ -69,31 +93,47 @@ const App: React.FC = () => {
     if (authLoading || !authUser) return;
 
     const init = async () => {
+      let hasLocalData = false;
+      
       // 1. Tentar ler do Cache Local primeiro para ser instantâneo
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         try {
           setData(JSON.parse(saved));
+          hasLocalData = true;
           setLoading(false);
         } catch (e) {
           console.error("Erro no cache", e);
         }
       }
 
-      // 2. Buscar da Nuvem em Background
+      // 2. Buscar da Nuvem em Background com timeout
       setSyncStatus("fetching");
       try {
-        const token = await authUser.getIdToken();
-        const res = await fetch(getDatabaseRestUrl(token));
-        if (res.ok) {
-          const cloudData = await res.json();
-          if (cloudData) {
-            setData(cloudData);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudData));
+        // Timeout de 8 segundos para evitar carregamento infinito
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout")), 8000),
+        );
+        
+        const fetchPromise = (async () => {
+          const token = await authUser.getIdToken();
+          const res = await fetch(getDatabaseRestUrl(token));
+          if (res.ok) {
+            const cloudData = await res.json();
+            if (cloudData) {
+              setData(cloudData);
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudData));
+            }
           }
-        }
+        })();
+
+        await Promise.race([fetchPromise, timeoutPromise]);
       } catch (e) {
-        console.warn("Offline ou Erro Firebase");
+        console.warn("Offline ou Erro Firebase:", e);
+        // Se não tem dados locais e falhou buscar da nuvem, usa dados padrão
+        if (!hasLocalData) {
+          setData(DEFAULT_DATA);
+        }
       } finally {
         setLoading(false);
         setSyncStatus("idle");
@@ -144,9 +184,65 @@ const App: React.FC = () => {
 
   const handleGoogleSignIn = async () => {
     setAuthError("");
+    setAuthLoading(true); // Indica que está processando
+
+    const missingEnv = REQUIRED_FIREBASE_ENV_VARS.filter(
+      (key) => !import.meta.env[key],
+    );
+    if (missingEnv.length > 0) {
+      setAuthError(
+        "Configuração do Firebase ausente na Vercel. Defina as variáveis VITE_FIREBASE_* no projeto e faça novo deploy.",
+      );
+      setAuthLoading(false);
+      return;
+    }
+
     try {
       await signInWithPopup(auth, googleProvider);
-    } catch {
+      // O onAuthStateChanged cuidará de setAuthLoading(false)
+    } catch (error) {
+      setAuthLoading(false); // Garante que para em caso de erro
+      
+      if (error instanceof FirebaseError) {
+        if (error.code === "auth/unauthorized-domain") {
+          setAuthError(
+            "Domínio não autorizado no Firebase Auth. Adicione este domínio em Authentication > Settings > Authorized domains.",
+          );
+          return;
+        }
+
+        if (error.code === "auth/invalid-api-key") {
+          setAuthError(
+            "API Key inválida no deploy. Revise VITE_FIREBASE_API_KEY na Vercel.",
+          );
+          return;
+        }
+
+        if (error.code === "auth/operation-not-allowed") {
+          setAuthError(
+            "Google Auth está desativado no Firebase. Ative em Authentication > Sign-in method.",
+          );
+          return;
+        }
+
+        if (error.code === "auth/popup-blocked") {
+          setAuthError(
+            "Popup bloqueado pelo navegador. Permita popups e tente novamente.",
+          );
+          return;
+        }
+
+        if (error.code === "auth/network-request-failed") {
+          setAuthError("Falha de rede. Verifique a conexão e tente novamente.");
+          return;
+        }
+        
+        if (error.code === "auth/popup-closed-by-user") {
+          setAuthError("Login cancelado. Tente novamente.");
+          return;
+        }
+      }
+
       setAuthError("Não foi possível entrar com Google. Tente novamente.");
     }
   };
