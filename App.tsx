@@ -53,36 +53,54 @@ const App: React.FC = () => {
   const isInitialMount = useRef(true);
 
   useEffect(() => {
+    let mounted = true;
+    let safetyTimeout: NodeJS.Timeout;
+
     // Timer de segurança: se authLoading não resolver em 10s, força false
-    const safetyTimeout = setTimeout(() => {
-      if (authLoading) {
-        console.warn("AuthLoading timeout - forçando false");
-        setAuthLoading(false);
-      }
-    }, 10000);
+    const setSafetyTimeout = () => {
+      safetyTimeout = setTimeout(() => {
+        if (mounted && authLoading) {
+          console.warn("AuthLoading timeout - forçando false");
+          setAuthLoading(false);
+        }
+      }, 10000);
+    };
+
+    setSafetyTimeout();
 
     const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
+      if (!mounted) return;
+
+      clearTimeout(safetyTimeout);
+
       try {
         if (user && ALLOWED_EMAILS.length > 0) {
           const email = user.email?.toLowerCase() || "";
           if (!ALLOWED_EMAILS.includes(email)) {
             await signOut(auth);
-            setAuthUser(null);
-            setAuthError("Este e-mail não tem permissão para acessar este app.");
-            setAuthLoading(false);
+            if (mounted) {
+              setAuthUser(null);
+              setAuthError("Este e-mail não tem permissão para acessar este app.");
+              setAuthLoading(false);
+            }
             return;
           }
         }
 
-        setAuthUser(user);
-        setAuthLoading(false);
+        if (mounted) {
+          setAuthUser(user);
+          setAuthLoading(false);
+        }
       } catch (error) {
         console.error("Erro no onAuthStateChanged:", error);
-        setAuthLoading(false);
+        if (mounted) {
+          setAuthLoading(false);
+        }
       }
     });
 
     return () => {
+      mounted = false;
       clearTimeout(safetyTimeout);
       unsubscribe();
     };
@@ -92,55 +110,85 @@ const App: React.FC = () => {
   useEffect(() => {
     if (authLoading || !authUser) return;
 
-    const init = async () => {
-      let hasLocalData = false;
-      
-      // 1. Tentar ler do Cache Local primeiro para ser instantâneo
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        try {
-          setData(JSON.parse(saved));
-          hasLocalData = true;
-          setLoading(false);
-        } catch (e) {
-          console.error("Erro no cache", e);
-        }
-      }
+    let mounted = true;
 
-      // 2. Buscar da Nuvem em Background com timeout
-      setSyncStatus("fetching");
+    const init = async () => {
       try {
-        // Timeout de 8 segundos para evitar carregamento infinito
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout")), 8000),
-        );
+        let hasLocalData = false;
         
-        const fetchPromise = (async () => {
-          const token = await authUser.getIdToken();
-          const res = await fetch(getDatabaseRestUrl(token));
-          if (res.ok) {
+        // 1. Tentar ler do Cache Local primeiro para ser instantâneo
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          try {
+            const localData = JSON.parse(saved);
+            if (mounted) {
+              setData(localData);
+              hasLocalData = true;
+              setLoading(false);
+            }
+          } catch (e) {
+            console.error("Erro no cache", e);
+          }
+        }
+
+        // Se não tem dados locais, carrega dados padrão imediatamente
+        if (!hasLocalData && mounted) {
+          setData(DEFAULT_DATA);
+          setLoading(false);
+        }
+
+        // 2. Buscar da Nuvem em Background com timeout
+        if (mounted) {
+          setSyncStatus("fetching");
+        }
+
+        try {
+          // Timeout de 5 segundos para busca da nuvem
+          const token = await Promise.race([
+            authUser.getIdToken(),
+            new Promise<string>((_, reject) =>
+              setTimeout(() => reject(new Error("Token timeout")), 3000),
+            ),
+          ]);
+
+          const url = getDatabaseRestUrl(token);
+          const res = await Promise.race([
+            fetch(url),
+            new Promise<Response>((_, reject) =>
+              setTimeout(() => reject(new Error("Fetch timeout")), 5000),
+            ),
+          ]);
+
+          if (res.ok && mounted) {
             const cloudData = await res.json();
             if (cloudData) {
               setData(cloudData);
               localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudData));
             }
           }
-        })();
-
-        await Promise.race([fetchPromise, timeoutPromise]);
-      } catch (e) {
-        console.warn("Offline ou Erro Firebase:", e);
-        // Se não tem dados locais e falhou buscar da nuvem, usa dados padrão
-        if (!hasLocalData) {
-          setData(DEFAULT_DATA);
+        } catch (e) {
+          console.warn("Offline ou Erro Firebase:", e);
+          // Falha silenciosa - já tem dados locais ou padrão
         }
-      } finally {
-        setLoading(false);
-        setSyncStatus("idle");
-        isInitialMount.current = false;
+
+        if (mounted) {
+          setSyncStatus("idle");
+          isInitialMount.current = false;
+        }
+      } catch (error) {
+        console.error("Erro na inicialização:", error);
+        if (mounted) {
+          setLoading(false);
+          setSyncStatus("idle");
+        }
       }
     };
+
     init();
+
+    return () => {
+      mounted = false;
+    };
   }, [authLoading, authUser]);
 
   // Sincronização Automática (Debounce de 2s)
@@ -184,66 +232,50 @@ const App: React.FC = () => {
 
   const handleGoogleSignIn = async () => {
     setAuthError("");
-    setAuthLoading(true); // Indica que está processando
 
     const missingEnv = REQUIRED_FIREBASE_ENV_VARS.filter(
       (key) => !import.meta.env[key],
     );
     if (missingEnv.length > 0) {
       setAuthError(
-        "Configuração do Firebase ausente na Vercel. Defina as variáveis VITE_FIREBASE_* no projeto e faça novo deploy.",
+        "Configuração do Firebase ausente. Defina as variáveis VITE_FIREBASE_* e faça novo deploy.",
       );
-      setAuthLoading(false);
       return;
     }
 
     try {
-      await signInWithPopup(auth, googleProvider);
-      // O onAuthStateChanged cuidará de setAuthLoading(false)
-    } catch (error) {
-      setAuthLoading(false); // Garante que para em caso de erro
-      
+      // Timeout de 10s para o popup
+      const loginPromise = signInWithPopup(auth, googleProvider);
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout")), 10000),
+      );
+
+      await Promise.race([loginPromise, timeoutPromise]);
+      // onAuthStateChanged cuidará do resto
+    } catch (error: unknown) {
       if (error instanceof FirebaseError) {
         if (error.code === "auth/unauthorized-domain") {
           setAuthError(
-            "Domínio não autorizado no Firebase Auth. Adicione este domínio em Authentication > Settings > Authorized domains.",
+            "Domínio não autorizado. Adicione em Firebase Console > Authentication > Authorized domains.",
           );
-          return;
+        } else if (error.code === "auth/invalid-api-key") {
+          setAuthError("API Key inválida. Revise as variáveis de ambiente.");
+        } else if (error.code === "auth/operation-not-allowed") {
+          setAuthError("Google Auth desativado no Firebase Console.");
+        } else if (error.code === "auth/popup-blocked") {
+          setAuthError("Popup bloqueado. Permita popups no seu navegador.");
+        } else if (error.code === "auth/network-request-failed") {
+          setAuthError("Falha de rede. Verifique sua conexão.");
+        } else if (error.code === "auth/popup-closed-by-user") {
+          setAuthError("Login cancelado.");
+        } else {
+          setAuthError(`Erro de autenticação: ${error.message}`);
         }
-
-        if (error.code === "auth/invalid-api-key") {
-          setAuthError(
-            "API Key inválida no deploy. Revise VITE_FIREBASE_API_KEY na Vercel.",
-          );
-          return;
-        }
-
-        if (error.code === "auth/operation-not-allowed") {
-          setAuthError(
-            "Google Auth está desativado no Firebase. Ative em Authentication > Sign-in method.",
-          );
-          return;
-        }
-
-        if (error.code === "auth/popup-blocked") {
-          setAuthError(
-            "Popup bloqueado pelo navegador. Permita popups e tente novamente.",
-          );
-          return;
-        }
-
-        if (error.code === "auth/network-request-failed") {
-          setAuthError("Falha de rede. Verifique a conexão e tente novamente.");
-          return;
-        }
-        
-        if (error.code === "auth/popup-closed-by-user") {
-          setAuthError("Login cancelado. Tente novamente.");
-          return;
-        }
+      } else if (error instanceof Error && error.message === "Timeout") {
+        setAuthError("Login demorou muito. Tente novamente.");
+      } else {
+        setAuthError("Erro ao fazer login. Tente novamente.");
       }
-
-      setAuthError("Não foi possível entrar com Google. Tente novamente.");
     }
   };
 
