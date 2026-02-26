@@ -64,9 +64,9 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
       notes: "",
     };
 
-    const updatedServices = data.vendorServices.map((service) => {
+    const updatedServices = (data.vendorServices || []).map((service) => {
       if (service.id === serviceId) {
-        return { ...service, options: [...service.options, newOption] };
+        return { ...service, options: [...(service.options || []), newOption] };
       }
       return service;
     });
@@ -79,9 +79,9 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
     field: keyof VendorOption,
     value: any,
   ) => {
-    const updatedServices = data.vendorServices.map((service) => {
+    const updatedServices = (data.vendorServices || []).map((service) => {
       if (service.id === serviceId) {
-        const updatedOptions = service.options.map((opt) =>
+        const updatedOptions = (service.options || []).map((opt) =>
           opt.id === optionId ? { ...opt, [field]: value } : opt,
         );
         return { ...service, options: updatedOptions };
@@ -92,11 +92,11 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
   };
 
   const removeOption = (serviceId: string, optionId: string) => {
-    const updatedServices = data.vendorServices.map((service) => {
+    const updatedServices = (data.vendorServices || []).map((service) => {
       if (service.id === serviceId) {
         return {
           ...service,
-          options: service.options.filter((o) => o.id !== optionId),
+          options: (service.options || []).filter((o) => o.id !== optionId),
           selectedOptionId:
             service.selectedOptionId === optionId
               ? undefined
@@ -109,7 +109,7 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
   };
 
   const selectWinner = (serviceId: string, optionId: string) => {
-    const updatedServices = data.vendorServices.map((service) => {
+    const updatedServices = (data.vendorServices || []).map((service) => {
       if (service.id === serviceId) {
         return {
           ...service,
@@ -124,7 +124,7 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
 
   // --- Calculations ---
   const totalSelected = (data.vendorServices || []).reduce((acc, service) => {
-    const winner = service.options.find(
+    const winner = (service.options || []).find(
       (o) => o.id === service.selectedOptionId,
     );
     return acc + (winner ? winner.quote : 0);
@@ -220,17 +220,14 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
       {/* Lista de Serviços */}
       <div className="space-y-4">
         {(data.vendorServices || []).map((service) => {
-          const winner = service.options.find(
-            (o) => o.id === service.selectedOptionId,
-          );
+          const options = service.options || [];
+          const winner = options.find((o) => o.id === service.selectedOptionId);
           const isExpanded = expandedServiceId === service.id;
 
           const lowestPrice =
-            service.options.length > 0
+            options.length > 0
               ? Math.min(
-                  ...service.options
-                    .filter((o) => o.quote > 0)
-                    .map((o) => o.quote),
+                  ...options.filter((o) => o.quote > 0).map((o) => o.quote),
                 )
               : 0;
 
@@ -261,7 +258,7 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                       </span>
                     ) : (
                       <span className="text-xs text-slate-400 dark:text-slate-300">
-                        {service.options.length} orçamentos
+                        {options.length} orçamentos
                       </span>
                     )}
                   </div>
@@ -289,13 +286,13 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
               {/* Expanded Content */}
               {isExpanded && (
                 <div className="p-4 sm:p-5 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/70 space-y-5 rounded-b-xl">
-                  {service.options.length === 0 && (
+                  {options.length === 0 && (
                     <div className="text-center py-4 text-slate-400 dark:text-slate-300 text-base">
                       Adicione fornecedores para comparar.
                     </div>
                   )}
 
-                  {service.options.map((option) => {
+                  {options.map((option) => {
                     const isWinner = service.selectedOptionId === option.id;
                     const isBestPrice =
                       option.quote > 0 && option.quote === lowestPrice;

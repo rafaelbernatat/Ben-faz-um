@@ -37,10 +37,11 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
   const categoryChartData = useMemo(() => {
     return (data.vendorServices || [])
       .map((service) => {
-        const selectedOption = service.options.find(
+        const options = service.options || [];
+        const selectedOption = options.find(
           (option) => option.id === service.selectedOptionId,
         );
-        const fallbackQuote = service.options.reduce((lowest, option) => {
+        const fallbackQuote = options.reduce((lowest, option) => {
           if (!option.quote || option.quote <= 0) return lowest;
           if (lowest === 0) return option.quote;
           return Math.min(lowest, option.quote);

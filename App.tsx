@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FirebaseError } from "firebase/app";
-import { AppData, ViewState } from "./types";
+import { AppData, RSVPStatus, TaskStatus, ViewState } from "./types";
 import { DEFAULT_DATA, STORAGE_KEY } from "./constants";
 import {
   User,
@@ -30,6 +30,84 @@ const ALLOWED_EMAILS = (import.meta.env.VITE_ALLOWED_EMAILS || "")
   .filter(Boolean);
 type ThemeMode = "light" | "dark";
 
+const normalizeAppData = (raw: unknown): AppData => {
+  if (!raw || typeof raw !== "object") {
+    return DEFAULT_DATA;
+  }
+
+  const parsed = raw as Partial<AppData>;
+
+  const categories = Array.isArray(parsed.categories)
+    ? parsed.categories.map((category: any) => ({
+        id: String(category?.id || crypto.randomUUID()),
+        name: String(category?.name || "Categoria"),
+        tasks: Array.isArray(category?.tasks)
+          ? category.tasks.map((task: any) => ({
+              id: String(task?.id || crypto.randomUUID()),
+              description: String(task?.description || ""),
+              budgeted: Number(task?.budgeted) || 0,
+              spent: Number(task?.spent) || 0,
+              notes: typeof task?.notes === "string" ? task.notes : undefined,
+              status: Object.values(TaskStatus).includes(task?.status)
+                ? task.status
+                : TaskStatus.TODO,
+              completed: Boolean(task?.completed),
+            }))
+          : [],
+      }))
+    : [];
+
+  const guests = Array.isArray(parsed.guests)
+    ? parsed.guests.map((guest: any) => ({
+        id: String(guest?.id || crypto.randomUUID()),
+        name: String(guest?.name || ""),
+        adults: Math.max(0, Number(guest?.adults) || 0),
+        kids: Math.max(0, Number(guest?.kids) || 0),
+        status: Object.values(RSVPStatus).includes(guest?.status)
+          ? guest.status
+          : RSVPStatus.PENDING,
+        contact: typeof guest?.contact === "string" ? guest.contact : undefined,
+      }))
+    : [];
+
+  const vendorServices = Array.isArray(parsed.vendorServices)
+    ? parsed.vendorServices.map((service: any) => ({
+        id: String(service?.id || crypto.randomUUID()),
+        name: String(service?.name || ""),
+        selectedOptionId:
+          typeof service?.selectedOptionId === "string"
+            ? service.selectedOptionId
+            : undefined,
+        options: Array.isArray(service?.options)
+          ? service.options.map((option: any) => ({
+              id: String(option?.id || crypto.randomUUID()),
+              name: String(option?.name || ""),
+              contact: String(option?.contact || ""),
+              notes:
+                typeof option?.notes === "string" ? option.notes : undefined,
+              quote: Math.max(0, Number(option?.quote) || 0),
+              rating: Math.max(0, Math.min(5, Number(option?.rating) || 0)),
+            }))
+          : [],
+      }))
+    : [];
+
+  return {
+    details: {
+      title: String(parsed.details?.title || DEFAULT_DATA.details.title),
+      date: String(parsed.details?.date || DEFAULT_DATA.details.date),
+      theme: String(parsed.details?.theme || DEFAULT_DATA.details.theme),
+      totalBudget: Math.max(
+        0,
+        Number(parsed.details?.totalBudget) || DEFAULT_DATA.details.totalBudget,
+      ),
+    },
+    categories,
+    guests,
+    vendorServices,
+  };
+};
+
 const App: React.FC = () => {
   const [data, setData] = useState<AppData>(DEFAULT_DATA);
   const [currentView, setCurrentView] = useState<ViewState>("dashboard");
@@ -52,7 +130,15 @@ const App: React.FC = () => {
 
   const isInitialMount = useRef(true);
 
+  console.log(
+    "🎯 App component renderizado. authLoading:",
+    authLoading,
+    "authUser:",
+    authUser,
+  );
+
   useEffect(() => {
+    console.log("🔐 Iniciando monitoramento de autenticação...");
     let mounted = true;
     let safetyTimeout: NodeJS.Timeout;
 
@@ -60,7 +146,7 @@ const App: React.FC = () => {
     const setSafetyTimeout = () => {
       safetyTimeout = setTimeout(() => {
         if (mounted && authLoading) {
-          console.warn("AuthLoading timeout - forçando false");
+          console.warn("⏰ AuthLoading timeout - forçando false");
           setAuthLoading(false);
         }
       }, 10000);
@@ -69,30 +155,42 @@ const App: React.FC = () => {
     setSafetyTimeout();
 
     const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
-      if (!mounted) return;
+      console.log(
+        "👤 onAuthStateChanged acionado, user:",
+        user?.email || "sem email",
+      );
+      if (!mounted) {
+        console.log("⚠️ Componente desmontado, ignorando update");
+        return;
+      }
 
       clearTimeout(safetyTimeout);
 
       try {
         if (user && ALLOWED_EMAILS.length > 0) {
           const email = user.email?.toLowerCase() || "";
+          console.log("🔍 Verificando email:", email, "contra whitelist");
           if (!ALLOWED_EMAILS.includes(email)) {
+            console.warn("❌ Email não autorizado:", email);
             await signOut(auth);
             if (mounted) {
               setAuthUser(null);
-              setAuthError("Este e-mail não tem permissão para acessar este app.");
+              setAuthError(
+                "Este e-mail não tem permissão para acessar este app.",
+              );
               setAuthLoading(false);
             }
             return;
           }
         }
 
+        console.log("✅ Usuário autenticado:", user?.email);
         if (mounted) {
           setAuthUser(user);
           setAuthLoading(false);
         }
       } catch (error) {
-        console.error("Erro no onAuthStateChanged:", error);
+        console.error("❌ Erro no onAuthStateChanged:", error);
         if (mounted) {
           setAuthLoading(false);
         }
@@ -100,6 +198,7 @@ const App: React.FC = () => {
     });
 
     return () => {
+      console.log("🧹 Limpando monitoramento de autenticação");
       mounted = false;
       clearTimeout(safetyTimeout);
       unsubscribe();
@@ -115,14 +214,14 @@ const App: React.FC = () => {
     const init = async () => {
       try {
         let hasLocalData = false;
-        
+
         // 1. Tentar ler do Cache Local primeiro para ser instantâneo
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           try {
             const localData = JSON.parse(saved);
             if (mounted) {
-              setData(localData);
+              setData(normalizeAppData(localData));
               hasLocalData = true;
               setLoading(false);
             }
@@ -162,8 +261,12 @@ const App: React.FC = () => {
           if (res.ok && mounted) {
             const cloudData = await res.json();
             if (cloudData) {
-              setData(cloudData);
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudData));
+              const normalizedCloudData = normalizeAppData(cloudData);
+              setData(normalizedCloudData);
+              localStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify(normalizedCloudData),
+              );
             }
           }
         } catch (e) {
@@ -228,7 +331,7 @@ const App: React.FC = () => {
     }
   }, [theme]);
 
-  const updateData = (newData: AppData) => setData(newData);
+  const updateData = (newData: AppData) => setData(normalizeAppData(newData));
 
   const handleGoogleSignIn = async () => {
     setAuthError("");
