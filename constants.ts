@@ -15,22 +15,16 @@ export const DEFAULT_DATA: AppData = {
         {
           id: "t-1",
           description: "Bolo",
-          budgeted: 300,
-          spent: 0,
           status: TaskStatus.TODO,
         },
         {
           id: "t-2",
           description: "Salgadinhos",
-          budgeted: 800,
-          spent: 0,
           status: TaskStatus.TODO,
         },
         {
           id: "t-3",
           description: "Bebidas",
-          budgeted: 400,
-          spent: 0,
           status: TaskStatus.TODO,
         },
       ],
@@ -42,15 +36,11 @@ export const DEFAULT_DATA: AppData = {
         {
           id: "t-4",
           description: "Balões",
-          budgeted: 200,
-          spent: 150,
           status: TaskStatus.COMPLETED,
         },
         {
           id: "t-5",
           description: "Mesa Principal",
-          budgeted: 600,
-          spent: 0,
           status: TaskStatus.TODO,
         },
       ],
@@ -62,8 +52,6 @@ export const DEFAULT_DATA: AppData = {
         {
           id: "t-6",
           description: "Aluguel do Salão",
-          budgeted: 1000,
-          spent: 1000,
           status: TaskStatus.COMPLETED,
         },
       ],
@@ -90,6 +78,7 @@ export const DEFAULT_DATA: AppData = {
       id: "vs-1",
       name: "Buffet",
       selectedOptionId: "vo-1",
+      chosenOptionId: "vo-1",
       options: [
         {
           id: "vo-1",
@@ -98,6 +87,28 @@ export const DEFAULT_DATA: AppData = {
           quote: 2500,
           rating: 5,
           notes: "Inclui bolo e doces. Garçons inclusos.",
+          paymentTerms: "30% sinal + 3x no cartão",
+          paymentDate: "2026-04-05",
+          paymentPlan: [
+            {
+              id: "vop-1",
+              date: "2026-04-05",
+              amount: 750,
+              description: "Sinal",
+            },
+            {
+              id: "vop-2",
+              date: "2026-05-05",
+              amount: 875,
+              description: "Parcela 1/2",
+            },
+            {
+              id: "vop-3",
+              date: "2026-06-05",
+              amount: 875,
+              description: "Parcela 2/2",
+            },
+          ],
         },
         {
           id: "vo-2",

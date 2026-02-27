@@ -22,8 +22,6 @@ export enum TaskStatus {
 export interface Task {
   id: string;
   description: string;
-  budgeted: number;
-  spent: number;
   notes?: string;
   status?: TaskStatus;
   completed?: boolean;
@@ -43,12 +41,23 @@ export interface VendorOption {
   notes?: string;
   quote: number; // Valor orçado
   rating: number; // 0 a 5
+  paymentTerms?: string;
+  paymentDate?: string; // YYYY-MM-DD
+  paymentPlan?: VendorPayment[];
+}
+
+export interface VendorPayment {
+  id: string;
+  date: string; // YYYY-MM-DD
+  amount: number;
+  description?: string;
 }
 
 export interface VendorService {
   id: string;
   name: string; // Ex: Buffet, Fotografia
-  selectedOptionId?: string; // ID do fornecedor escolhido
+  selectedOptionId?: string; // ID do fornecedor contratado
+  chosenOptionId?: string; // ID do fornecedor escolhido para comparação
   options: VendorOption[];
 }
 

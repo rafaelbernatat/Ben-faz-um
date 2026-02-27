@@ -3,6 +3,7 @@ import { AppData, RSVPStatus } from "../types";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import {
   Calendar,
+  CalendarClock,
   CheckCircle2,
   DollarSign,
   Users,
@@ -18,21 +19,73 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
   const [chartView, setChartView] = useState<"financial" | "category">(
     "financial",
   );
+  const [calendarMonth, setCalendarMonth] = useState(
+    data.details.date.slice(0, 7),
+  );
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<
+    string | null
+  >(null);
 
   const totalBudget = data.details.totalBudget;
-  let totalSpent = 0;
-  data.categories.forEach((cat) =>
-    cat.tasks.forEach((task) => (totalSpent += task.spent)),
+
+  const contractedVendors = useMemo(() => {
+    return (data.vendorServices || []).reduce<
+      {
+        serviceName: string;
+        optionName: string;
+        quote: number;
+        paymentDate?: string;
+        paymentPlan: {
+          id: string;
+          date: string;
+          amount: number;
+          description?: string;
+        }[];
+      }[]
+    >((acc, service) => {
+      const selectedOption = (service.options || []).find(
+        (option) => option.id === service.selectedOptionId,
+      );
+
+      if (!selectedOption) return acc;
+
+      acc.push({
+        serviceName: service.name,
+        optionName: selectedOption.name || service.name,
+        quote: selectedOption.quote || 0,
+        paymentDate: selectedOption.paymentDate,
+        paymentPlan: selectedOption.paymentPlan || [],
+      });
+
+      return acc;
+    }, []);
+  }, [data.vendorServices]);
+
+  const contractedTotal = contractedVendors.reduce(
+    (sum, vendor) => sum + vendor.quote,
+    0,
   );
+
+  const chosenTotal = useMemo(() => {
+    return (data.vendorServices || []).reduce((sum, service) => {
+      const chosenOption = (service.options || []).find(
+        (option) => option.id === service.chosenOptionId,
+      );
+      return sum + (chosenOption?.quote || 0);
+    }, 0);
+  }, [data.vendorServices]);
+
+  const totalSpent = contractedTotal;
 
   const remaining = totalBudget - totalSpent;
   const isOverBudget = remaining < 0;
 
   const financialChartData = [
     { name: "Gasto", value: totalSpent },
+    { name: "Reservado", value: chosenTotal },
     { name: "Disponível", value: Math.max(0, remaining) },
   ];
-  const financialColors = ["#f43f5e", "#10b981"];
+  const financialColors = ["#f43f5e", "#0ea5e9", "#10b981"];
 
   const categoryChartData = useMemo(() => {
     return (data.vendorServices || [])
@@ -54,6 +107,130 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       })
       .filter((service) => service.value > 0);
   }, [data.vendorServices]);
+
+  const cashFlowEntries = useMemo(() => {
+    const fallbackDate = data.details.date;
+
+    return contractedVendors
+      .flatMap((vendor) => {
+        const validPlan = (vendor.paymentPlan || []).filter(
+          (payment) => payment.date && payment.amount > 0,
+        );
+
+        if (validPlan.length > 0) {
+          return validPlan.map((payment) => ({
+            id: payment.id,
+            date: payment.date,
+            amount: payment.amount,
+            serviceName: vendor.serviceName,
+            optionName: vendor.optionName,
+            description: payment.description || "Parcela",
+          }));
+        }
+
+        return [
+          {
+            id: `${vendor.serviceName}-${vendor.optionName}`,
+            date: vendor.paymentDate || fallbackDate,
+            amount: vendor.quote,
+            serviceName: vendor.serviceName,
+            optionName: vendor.optionName,
+            description: "Pagamento único",
+          },
+        ];
+      })
+      .filter((entry) => entry.amount > 0 && Boolean(entry.date))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [contractedVendors, data.details.date]);
+
+  const cashFlowByMonth = useMemo(() => {
+    const grouped = cashFlowEntries.reduce(
+      (acc, entry) => {
+        const monthKey = entry.date.slice(0, 7);
+        const current = acc.get(monthKey) || {
+          monthKey,
+          total: 0,
+          items: [] as typeof cashFlowEntries,
+        };
+
+        current.total += entry.amount;
+        current.items.push(entry);
+        acc.set(monthKey, current);
+        return acc;
+      },
+      new Map<
+        string,
+        {
+          monthKey: string;
+          total: number;
+          items: typeof cashFlowEntries;
+        }
+      >(),
+    );
+
+    return Array.from(grouped.values()).sort((a, b) =>
+      a.monthKey.localeCompare(b.monthKey),
+    );
+  }, [cashFlowEntries]);
+
+  const cashFlowByDate = useMemo(() => {
+    return cashFlowEntries.reduce(
+      (acc, entry) => {
+        const current = acc.get(entry.date) || {
+          date: entry.date,
+          total: 0,
+          items: [] as typeof cashFlowEntries,
+        };
+
+        current.total += entry.amount;
+        current.items.push(entry);
+        acc.set(entry.date, current);
+        return acc;
+      },
+      new Map<
+        string,
+        {
+          date: string;
+          total: number;
+          items: typeof cashFlowEntries;
+        }
+      >(),
+    );
+  }, [cashFlowEntries]);
+
+  const calendarMatrix = useMemo(() => {
+    const [yearRaw, monthRaw] = calendarMonth.split("-");
+    const year = Number(yearRaw);
+    const month = Number(monthRaw);
+
+    if (!year || !month) {
+      return { days: [] as Array<string | null>, monthLabel: "" };
+    }
+
+    const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    const days: Array<string | null> = [];
+    for (let index = 0; index < firstDayOfMonth; index += 1) {
+      days.push(null);
+    }
+
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      const date = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      days.push(date);
+    }
+
+    const monthLabel = new Date(year, month - 1).toLocaleDateString("pt-BR", {
+      month: "long",
+      year: "numeric",
+    });
+
+    return { days, monthLabel };
+  }, [calendarMonth]);
+
+  const selectedDayData = selectedCalendarDate
+    ? cashFlowByDate.get(selectedCalendarDate)
+    : undefined;
 
   const categoryColors = [
     "#14b8a6",
@@ -141,6 +318,14 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
             className={`text-xl font-black ${isOverBudget ? "text-red-500" : "text-emerald-500"}`}
           >
             R$ {remaining.toLocaleString("pt-BR")}
+          </p>
+        </div>
+        <div className="bg-gradient-to-br from-sky-50 to-white p-5 rounded-[2rem] border border-sky-100 shadow-sm dark:from-slate-900 dark:to-slate-900 dark:border-slate-700 col-span-2">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+            Reservado (Escolhidos)
+          </p>
+          <p className="text-xl font-black text-sky-600">
+            R$ {chosenTotal.toLocaleString("pt-BR")}
           </p>
         </div>
       </div>
@@ -237,6 +422,158 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
                 </span>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm dark:border-slate-700">
+        <h2 className="text-sm font-bold text-slate-500 mb-4 flex items-center">
+          <CalendarClock className="w-4 h-4 mr-1 text-brand-500" />
+          Calendário Financeiro
+        </h2>
+
+        {cashFlowByMonth.length === 0 ? (
+          <p className="text-sm text-slate-400">
+            Marque fornecedores como contratados e adicione parcelas para ver o
+            fluxo de caixa.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {cashFlowByMonth.map((month) => {
+              const [year, monthNumber] = month.monthKey.split("-");
+              const monthDate = new Date(Number(year), Number(monthNumber) - 1);
+
+              return (
+                <div
+                  key={month.monthKey}
+                  className="rounded-xl border border-slate-200 p-3"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                      {monthDate.toLocaleDateString("pt-BR", {
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </p>
+                    <p className="text-sm font-black text-slate-800">
+                      R$ {month.total.toLocaleString("pt-BR")}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    {month.items.map((entry) => (
+                      <div
+                        key={`${month.monthKey}-${entry.id}`}
+                        className="flex items-center justify-between text-xs bg-slate-50 rounded-lg px-2.5 py-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-semibold text-slate-700 truncate">
+                            {entry.serviceName} • {entry.optionName}
+                          </p>
+                          <p className="text-slate-500 truncate">
+                            {new Date(entry.date).toLocaleDateString("pt-BR")} •{" "}
+                            {entry.description}
+                          </p>
+                        </div>
+                        <p className="font-bold text-slate-700 pl-3 shrink-0">
+                          R$ {entry.amount.toLocaleString("pt-BR")}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className="rounded-xl border border-slate-200 p-3 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Visão mensal
+                </p>
+                <input
+                  type="month"
+                  value={calendarMonth}
+                  onChange={(event) => {
+                    setCalendarMonth(event.target.value);
+                    setSelectedCalendarDate(null);
+                  }}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs text-slate-700"
+                />
+              </div>
+
+              <p className="text-sm font-black text-slate-700 capitalize">
+                {calendarMatrix.monthLabel}
+              </p>
+
+              <div className="grid grid-cols-7 gap-1 text-[10px] font-bold text-slate-400 uppercase">
+                {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(
+                  (weekday) => (
+                    <div key={weekday} className="text-center py-1">
+                      {weekday}
+                    </div>
+                  ),
+                )}
+              </div>
+
+              <div className="grid grid-cols-7 gap-1">
+                {calendarMatrix.days.map((date, index) => {
+                  if (!date) {
+                    return <div key={`empty-${index}`} className="h-10" />;
+                  }
+
+                  const dayData = cashFlowByDate.get(date);
+                  const isSelected = selectedCalendarDate === date;
+                  const dayNumber = Number(date.slice(-2));
+
+                  return (
+                    <button
+                      key={date}
+                      onClick={() => setSelectedCalendarDate(date)}
+                      className={`h-10 rounded-lg text-xs font-semibold border transition-colors ${isSelected ? "bg-brand-600 text-white border-brand-600" : dayData ? "bg-brand-50 text-brand-700 border-brand-200" : "bg-white text-slate-500 border-slate-200"}`}
+                    >
+                      {dayNumber}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {selectedCalendarDate && (
+                <div className="rounded-lg bg-slate-50 border border-slate-200 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-slate-600 uppercase">
+                      {new Date(selectedCalendarDate).toLocaleDateString(
+                        "pt-BR",
+                      )}
+                    </p>
+                    <p className="text-sm font-black text-slate-800">
+                      R$ {(selectedDayData?.total || 0).toLocaleString("pt-BR")}
+                    </p>
+                  </div>
+
+                  {selectedDayData && selectedDayData.items.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {selectedDayData.items.map((entry) => (
+                        <div
+                          key={`${entry.id}-selected-day`}
+                          className="text-xs flex items-center justify-between bg-white rounded-md px-2 py-1.5"
+                        >
+                          <span className="text-slate-600 truncate pr-2">
+                            {entry.serviceName} • {entry.description}
+                          </span>
+                          <span className="font-semibold text-slate-700 shrink-0">
+                            R$ {entry.amount.toLocaleString("pt-BR")}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-400">
+                      Nenhum valor programado para este dia.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

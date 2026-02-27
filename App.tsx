@@ -45,8 +45,6 @@ const normalizeAppData = (raw: unknown): AppData => {
           ? category.tasks.map((task: any) => ({
               id: String(task?.id || crypto.randomUUID()),
               description: String(task?.description || ""),
-              budgeted: Number(task?.budgeted) || 0,
-              spent: Number(task?.spent) || 0,
               notes: typeof task?.notes === "string" ? task.notes : undefined,
               status: Object.values(TaskStatus).includes(task?.status)
                 ? task.status
@@ -78,6 +76,10 @@ const normalizeAppData = (raw: unknown): AppData => {
           typeof service?.selectedOptionId === "string"
             ? service.selectedOptionId
             : undefined,
+        chosenOptionId:
+          typeof service?.chosenOptionId === "string"
+            ? service.chosenOptionId
+            : undefined,
         options: Array.isArray(service?.options)
           ? service.options.map((option: any) => ({
               id: String(option?.id || crypto.randomUUID()),
@@ -87,6 +89,25 @@ const normalizeAppData = (raw: unknown): AppData => {
                 typeof option?.notes === "string" ? option.notes : undefined,
               quote: Math.max(0, Number(option?.quote) || 0),
               rating: Math.max(0, Math.min(5, Number(option?.rating) || 0)),
+              paymentTerms:
+                typeof option?.paymentTerms === "string"
+                  ? option.paymentTerms
+                  : undefined,
+              paymentDate:
+                typeof option?.paymentDate === "string"
+                  ? option.paymentDate
+                  : undefined,
+              paymentPlan: Array.isArray(option?.paymentPlan)
+                ? option.paymentPlan.map((payment: any) => ({
+                    id: String(payment?.id || crypto.randomUUID()),
+                    date: String(payment?.date || ""),
+                    amount: Math.max(0, Number(payment?.amount) || 0),
+                    description:
+                      typeof payment?.description === "string"
+                        ? payment.description
+                        : undefined,
+                  }))
+                : [],
             }))
           : [],
       }))
@@ -483,7 +504,7 @@ const App: React.FC = () => {
         )}
       </div>
 
-      <main className="relative z-10 max-w-md mx-auto min-h-screen px-4 pt-6 pb-28">
+      <main className="relative z-10 max-w-md sm:max-w-2xl lg:max-w-3xl mx-auto min-h-screen px-4 sm:px-5 pt-6 pb-28">
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
           {currentView === "dashboard" && <Dashboard data={data} />}
           {currentView === "budget" && (

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { AppData, VendorService, VendorOption } from "../types";
 import {
   Phone,
@@ -11,6 +12,8 @@ import {
   Trophy,
   CheckCircle2,
   MessageCircle,
+  CalendarDays,
+  X,
 } from "lucide-react";
 
 interface VendorListProps {
@@ -23,6 +26,20 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
     null,
   );
   const [newServiceName, setNewServiceName] = useState("");
+  const [percentInput, setPercentInput] = useState("0");
+  const [installmentsInput, setInstallmentsInput] = useState("1");
+  const [contractModal, setContractModal] = useState<{
+    serviceId: string;
+    optionId: string;
+    serviceName: string;
+    optionName: string;
+    quote: number;
+    paymentDate: string;
+    entryAmount: number;
+    entryPercent: number;
+    entryMode: "value" | "percent";
+    installments: number;
+  } | null>(null);
 
   // --- Service Management ---
   const addService = () => {
@@ -62,6 +79,9 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
       quote: 0,
       rating: 0,
       notes: "",
+      paymentTerms: "",
+      paymentDate: "",
+      paymentPlan: [],
     };
 
     const updatedServices = (data.vendorServices || []).map((service) => {
@@ -101,6 +121,10 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
             service.selectedOptionId === optionId
               ? undefined
               : service.selectedOptionId,
+          chosenOptionId:
+            service.chosenOptionId === optionId
+              ? undefined
+              : service.chosenOptionId,
         };
       }
       return service;
@@ -108,17 +132,270 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
     onUpdate({ ...data, vendorServices: updatedServices });
   };
 
-  const selectWinner = (serviceId: string, optionId: string) => {
+  const chooseOption = (serviceId: string, optionId: string) => {
     const updatedServices = (data.vendorServices || []).map((service) => {
       if (service.id === serviceId) {
         return {
           ...service,
-          selectedOptionId:
-            service.selectedOptionId === optionId ? undefined : optionId,
+          chosenOptionId:
+            service.chosenOptionId === optionId ? undefined : optionId,
         };
       }
       return service;
     });
+    onUpdate({ ...data, vendorServices: updatedServices });
+  };
+
+  const contractOption = (
+    serviceId: string,
+    optionId: string,
+    paymentTerms?: string,
+  ) => {
+    const currentService = (data.vendorServices || []).find(
+      (service) => service.id === serviceId,
+    );
+    const isAlreadyContracted = currentService?.selectedOptionId === optionId;
+
+    if (!isAlreadyContracted && (!paymentTerms || !paymentTerms.trim())) {
+      alert("Para contratar, preencha a condição de pagamento.");
+      return;
+    }
+
+    const updatedServices = (data.vendorServices || []).map((service) => {
+      if (service.id === serviceId) {
+        const isCurrent = service.selectedOptionId === optionId;
+
+        return {
+          ...service,
+          selectedOptionId: isCurrent ? undefined : optionId,
+          chosenOptionId: service.chosenOptionId,
+        };
+      }
+      return service;
+    });
+    onUpdate({ ...data, vendorServices: updatedServices });
+  };
+
+  const addMonthsToDate = (date: string, months: number) => {
+    if (!date) return "";
+    const [yearRaw, monthRaw, dayRaw] = date.split("-");
+    const year = Number(yearRaw);
+    const month = Number(monthRaw);
+    const day = Number(dayRaw);
+
+    if (!year || !month || !day) return "";
+
+    const nextDate = new Date(year, month - 1 + months, day);
+    return nextDate.toISOString().slice(0, 10);
+  };
+
+  const openContractModal = (service: VendorService, option: VendorOption) => {
+    const today = new Date().toISOString().slice(0, 10);
+
+    setContractModal({
+      serviceId: service.id,
+      optionId: option.id,
+      serviceName: service.name,
+      optionName: option.name || service.name,
+      quote: option.quote,
+      paymentDate: option.paymentDate || today,
+      entryAmount: 0,
+      entryPercent: 0,
+      entryMode: "value",
+      installments: 1,
+    });
+    setPercentInput("0");
+    setInstallmentsInput("1");
+  };
+
+  const closeContractModal = () => {
+    setPercentInput("0");
+    setInstallmentsInput("1");
+    setContractModal(null);
+  };
+
+  const confirmContractWithPlan = () => {
+    if (!contractModal) return;
+
+    const {
+      serviceId,
+      optionId,
+      quote,
+      paymentDate,
+      entryAmount,
+      entryPercent,
+      entryMode,
+      installments,
+    } = contractModal;
+
+    const effectiveEntryAmount =
+      entryMode === "percent"
+        ? Number(((quote * entryPercent) / 100).toFixed(2))
+        : entryAmount;
+
+    if (!paymentDate) {
+      alert("Selecione a data inicial do pagamento.");
+      return;
+    }
+
+    if (!quote || quote <= 0) {
+      alert("Defina um valor válido para o fornecedor antes de contratar.");
+      return;
+    }
+
+    if (effectiveEntryAmount < 0 || effectiveEntryAmount > quote) {
+      alert("A entrada deve estar entre R$ 0 e o valor total.");
+      return;
+    }
+
+    if (installments < 1) {
+      alert("Informe pelo menos 1 parcela.");
+      return;
+    }
+
+    const remaining = Math.max(0, quote - effectiveEntryAmount);
+    const baseInstallment = Math.floor((remaining / installments) * 100) / 100;
+    const totalBase = baseInstallment * installments;
+    const adjustment = Number((remaining - totalBase).toFixed(2));
+
+    const paymentPlan: NonNullable<VendorOption["paymentPlan"]> = [];
+
+    if (effectiveEntryAmount > 0) {
+      paymentPlan.push({
+        id: crypto.randomUUID(),
+        date: paymentDate,
+        amount: Number(effectiveEntryAmount.toFixed(2)),
+        description: "Entrada",
+      });
+    }
+
+    for (let index = 0; index < installments; index += 1) {
+      const dueDate = addMonthsToDate(
+        paymentDate,
+        effectiveEntryAmount > 0 ? index + 1 : index,
+      );
+      const amount =
+        index === installments - 1
+          ? Number((baseInstallment + adjustment).toFixed(2))
+          : baseInstallment;
+
+      paymentPlan.push({
+        id: crypto.randomUUID(),
+        date: dueDate,
+        amount,
+        description: `Parcela ${index + 1}/${installments}`,
+      });
+    }
+
+    const firstInstallmentAmount = paymentPlan.find((item) =>
+      item.description?.startsWith("Parcela"),
+    )?.amount;
+    const paymentTerms =
+      effectiveEntryAmount > 0
+        ? `${entryMode === "percent" ? `${entryPercent.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%` : `R$ ${effectiveEntryAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} de entrada + ${installments}x de R$ ${(firstInstallmentAmount || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        : `${installments}x de R$ ${(firstInstallmentAmount || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    const updatedServices = (data.vendorServices || []).map((service) => {
+      if (service.id !== serviceId) return service;
+
+      const updatedOptions = (service.options || []).map((option) => {
+        if (option.id !== optionId) return option;
+
+        return {
+          ...option,
+          paymentDate,
+          paymentTerms,
+          paymentPlan,
+        };
+      });
+
+      return {
+        ...service,
+        selectedOptionId: optionId,
+        options: updatedOptions,
+      };
+    });
+
+    onUpdate({ ...data, vendorServices: updatedServices });
+    closeContractModal();
+  };
+
+  const addPaymentToOption = (serviceId: string, optionId: string) => {
+    const updatedServices = (data.vendorServices || []).map((service) => {
+      if (service.id !== serviceId) return service;
+
+      const updatedOptions = (service.options || []).map((option) => {
+        if (option.id !== optionId) return option;
+
+        return {
+          ...option,
+          paymentPlan: [
+            ...(option.paymentPlan || []),
+            {
+              id: crypto.randomUUID(),
+              date: option.paymentDate || "",
+              amount: 0,
+              description: "",
+            },
+          ],
+        };
+      });
+
+      return { ...service, options: updatedOptions };
+    });
+
+    onUpdate({ ...data, vendorServices: updatedServices });
+  };
+
+  const updatePayment = (
+    serviceId: string,
+    optionId: string,
+    paymentId: string,
+    field: "date" | "amount" | "description",
+    value: string | number,
+  ) => {
+    const updatedServices = (data.vendorServices || []).map((service) => {
+      if (service.id !== serviceId) return service;
+
+      const updatedOptions = (service.options || []).map((option) => {
+        if (option.id !== optionId) return option;
+
+        return {
+          ...option,
+          paymentPlan: (option.paymentPlan || []).map((payment) =>
+            payment.id === paymentId ? { ...payment, [field]: value } : payment,
+          ),
+        };
+      });
+
+      return { ...service, options: updatedOptions };
+    });
+
+    onUpdate({ ...data, vendorServices: updatedServices });
+  };
+
+  const removePayment = (
+    serviceId: string,
+    optionId: string,
+    paymentId: string,
+  ) => {
+    const updatedServices = (data.vendorServices || []).map((service) => {
+      if (service.id !== serviceId) return service;
+
+      const updatedOptions = (service.options || []).map((option) => {
+        if (option.id !== optionId) return option;
+
+        return {
+          ...option,
+          paymentPlan: (option.paymentPlan || []).filter(
+            (payment) => payment.id !== paymentId,
+          ),
+        };
+      });
+
+      return { ...service, options: updatedOptions };
+    });
+
     onUpdate({ ...data, vendorServices: updatedServices });
   };
 
@@ -128,6 +405,13 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
       (o) => o.id === service.selectedOptionId,
     );
     return acc + (winner ? winner.quote : 0);
+  }, 0);
+
+  const totalChosen = (data.vendorServices || []).reduce((acc, service) => {
+    const chosen = (service.options || []).find(
+      (o) => o.id === service.chosenOptionId,
+    );
+    return acc + (chosen ? chosen.quote : 0);
   }, 0);
 
   const renderStars = (
@@ -183,6 +467,12 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
     return `https://wa.me/${phone}`;
   };
 
+  const modalEntryAmount = contractModal
+    ? contractModal.entryMode === "percent"
+      ? Number(((contractModal.quote * contractModal.entryPercent) / 100).toFixed(2))
+      : contractModal.entryAmount
+    : 0;
+
   return (
     <div className="pb-24 space-y-6">
       {/* Header com Total */}
@@ -193,12 +483,16 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
         </p>
         <div className="flex items-end justify-between">
           <div className="text-brand-100 text-xs uppercase font-semibold tracking-wider">
-            Total Contratado
+            Gasto Real
           </div>
           <div className="text-3xl font-bold">
             R$ {totalSelected.toLocaleString("pt-BR")}
           </div>
         </div>
+        <p className="text-brand-100 text-[11px] mt-2">Total contratado</p>
+        <p className="text-brand-100 text-[11px] mt-1">
+          Reservado (escolhidos): R$ {totalChosen.toLocaleString("pt-BR")}
+        </p>
       </div>
 
       {/* Criar Novo Serviço */}
@@ -222,6 +516,7 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
         {(data.vendorServices || []).map((service) => {
           const options = service.options || [];
           const winner = options.find((o) => o.id === service.selectedOptionId);
+          const chosen = options.find((o) => o.id === service.chosenOptionId);
           const isExpanded = expandedServiceId === service.id;
 
           const lowestPrice =
@@ -248,14 +543,30 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                     {service.name}
                   </h3>
                   <div className="flex items-center mt-1">
-                    {winner ? (
-                      <span className="inline-flex items-center text-xs font-medium text-green-700 dark:text-green-200 bg-green-100 dark:bg-green-900/40 px-2 py-0.5 rounded-full truncate max-w-full">
-                        <CheckCircle2 className="w-3 h-3 mr-1 shrink-0" />
-                        <span className="truncate">{winner.name}</span>
-                        <span className="ml-1 shrink-0">
-                          (R$ {winner.quote})
-                        </span>
-                      </span>
+                    {winner || chosen ? (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {chosen && (
+                          <span className="inline-flex items-center text-xs font-medium text-sky-700 dark:text-sky-200 bg-sky-100 dark:bg-sky-900/40 px-2 py-0.5 rounded-full truncate max-w-full">
+                            <span className="truncate">
+                              Escolhido: {chosen.name}
+                            </span>
+                            <span className="ml-1 shrink-0">
+                              (R$ {chosen.quote})
+                            </span>
+                          </span>
+                        )}
+                        {winner && (
+                          <span className="inline-flex items-center text-xs font-medium text-green-700 dark:text-green-200 bg-green-100 dark:bg-green-900/40 px-2 py-0.5 rounded-full truncate max-w-full">
+                            <CheckCircle2 className="w-3 h-3 mr-1 shrink-0" />
+                            <span className="truncate">
+                              Contratado: {winner.name}
+                            </span>
+                            <span className="ml-1 shrink-0">
+                              (R$ {winner.quote})
+                            </span>
+                          </span>
+                        )}
+                      </div>
                     ) : (
                       <span className="text-xs text-slate-400 dark:text-slate-300">
                         {options.length} orçamentos
@@ -294,8 +605,15 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
 
                   {options.map((option) => {
                     const isWinner = service.selectedOptionId === option.id;
+                    const isChosen = service.chosenOptionId === option.id;
                     const isBestPrice =
                       option.quote > 0 && option.quote === lowestPrice;
+                    const paymentPlanTotal = (option.paymentPlan || []).reduce(
+                      (sum, payment) => sum + (payment.amount || 0),
+                      0,
+                    );
+                    const hasPaymentPlan =
+                      (option.paymentPlan || []).length > 0;
 
                     return (
                       <div
@@ -313,6 +631,11 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                               Melhor Preço
                             </span>
                           )}
+                          {isChosen && (
+                            <span className="bg-sky-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm border border-sky-700">
+                              Fornecedor escolhido
+                            </span>
+                          )}
                           {isWinner && (
                             <span className="bg-brand-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm flex items-center border border-brand-700">
                               <Trophy className="w-3 h-3 mr-1" />
@@ -322,20 +645,41 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                         </div>
 
                         {/* Main Layout */}
-                        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                        <div className="flex flex-col lg:flex-row gap-3 pt-2">
                           {/* Select Button Column */}
-                          <div className="pt-2">
+                          <div className="pt-2 space-y-2 min-w-[120px]">
                             <button
                               onClick={() =>
-                                selectWinner(service.id, option.id)
+                                chooseOption(service.id, option.id)
                               }
-                              className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${
-                                isWinner
-                                  ? "border-brand-500 bg-brand-500 text-white shadow-sm"
-                                  : "border-slate-300 dark:border-slate-600 hover:border-brand-400 text-slate-300 dark:text-slate-500 hover:text-brand-400 bg-white dark:bg-slate-800"
+                              className={`w-full px-3 py-2 rounded-lg border text-xs font-semibold transition-colors ${
+                                isChosen
+                                  ? "border-sky-500 bg-sky-500 text-white"
+                                  : "border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-200 hover:border-sky-400"
                               }`}
                             >
-                              <CheckCircle2 className="w-6 h-6" />
+                              Fornecedor escolhido
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (isWinner) {
+                                  contractOption(
+                                    service.id,
+                                    option.id,
+                                    option.paymentTerms,
+                                  );
+                                  return;
+                                }
+
+                                openContractModal(service, option);
+                              }}
+                              className={`w-full px-3 py-2 rounded-lg border text-xs font-semibold transition-colors ${
+                                isWinner
+                                  ? "border-rose-500 bg-rose-500 text-white"
+                                  : "border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-200 hover:border-brand-400"
+                              }`}
+                            >
+                              {isWinner ? "Descontratar" : "Contratado"}
                             </button>
                           </div>
 
@@ -436,6 +780,122 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
                                 }
                               />
                             </div>
+
+                            <div className="space-y-3 border border-slate-200 dark:border-slate-700 rounded-xl p-3 bg-slate-50/70 dark:bg-slate-800/50">
+                              <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+                                Condição e Fluxo de Pagamento
+                              </p>
+
+                              <input
+                                className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-brand-500 outline-none"
+                                placeholder="Condição (ex: 30% sinal + 3x no cartão)"
+                                value={option.paymentTerms || ""}
+                                onChange={(e) =>
+                                  updateOption(
+                                    service.id,
+                                    option.id,
+                                    "paymentTerms",
+                                    e.target.value,
+                                  )
+                                }
+                              />
+
+                              <div className="relative w-full">
+                                <CalendarDays className="absolute left-3 top-3.5 w-4 h-4 text-slate-400 dark:text-slate-500" />
+                                <input
+                                  type="date"
+                                  className="w-full pl-10 p-3 border border-slate-300 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-brand-500 outline-none"
+                                  value={option.paymentDate || ""}
+                                  onChange={(e) =>
+                                    updateOption(
+                                      service.id,
+                                      option.id,
+                                      "paymentDate",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                {(option.paymentPlan || []).map((payment) => (
+                                  <div
+                                    key={payment.id}
+                                    className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-2"
+                                  >
+                                    <input
+                                      type="date"
+                                      className="p-2.5 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-brand-500 outline-none"
+                                      value={payment.date}
+                                      onChange={(e) =>
+                                        updatePayment(
+                                          service.id,
+                                          option.id,
+                                          payment.id,
+                                          "date",
+                                          e.target.value,
+                                        )
+                                      }
+                                    />
+                                    <div className="relative">
+                                      <span className="absolute left-3 top-2.5 text-slate-400 text-xs">
+                                        R$
+                                      </span>
+                                      <input
+                                        type="text"
+                                        inputMode="decimal"
+                                        className="w-full pl-8 p-2.5 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-brand-500 outline-none"
+                                        placeholder="0,00"
+                                        value={formatCurrencyBR(payment.amount)}
+                                        onChange={(e) =>
+                                          updatePayment(
+                                            service.id,
+                                            option.id,
+                                            payment.id,
+                                            "amount",
+                                            parseCurrencyBR(e.target.value),
+                                          )
+                                        }
+                                      />
+                                    </div>
+                                    <button
+                                      onClick={() =>
+                                        removePayment(
+                                          service.id,
+                                          option.id,
+                                          payment.id,
+                                        )
+                                      }
+                                      className="px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-400 hover:text-red-500 hover:border-red-200 dark:hover:border-red-500/40 transition-colors"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <div className="flex items-center justify-between gap-2">
+                                <button
+                                  onClick={() =>
+                                    addPaymentToOption(service.id, option.id)
+                                  }
+                                  className="text-xs font-semibold text-brand-600 dark:text-brand-300 hover:text-brand-700 dark:hover:text-brand-200"
+                                >
+                                  + Adicionar parcela
+                                </button>
+                                {hasPaymentPlan && (
+                                  <p
+                                    className={`text-xs font-semibold ${Math.abs(paymentPlanTotal - option.quote) < 0.01 ? "text-emerald-600 dark:text-emerald-300" : "text-amber-600 dark:text-amber-300"}`}
+                                  >
+                                    Parcelas: R${" "}
+                                    {paymentPlanTotal.toLocaleString("pt-BR", {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    })}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
                           </div>
 
                           {/* Delete Button */}
@@ -474,6 +934,328 @@ const VendorList: React.FC<VendorListProps> = ({ data, onUpdate }) => {
           </div>
         )}
       </div>
+
+      {contractModal &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-slate-950/60 backdrop-blur-[1px] p-4 pb-24 sm:pb-4 flex items-end sm:items-center justify-center overflow-y-auto">
+            <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl p-4 space-y-4 max-h-[88vh] overflow-y-auto">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wide text-brand-600">
+                    Contratar fornecedor
+                  </p>
+                  <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
+                    {contractModal.serviceName}
+                  </h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-300">
+                    {contractModal.optionName}
+                  </p>
+                </div>
+                <button
+                  onClick={closeContractModal}
+                  className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-3">
+                <p className="text-[11px] font-bold uppercase text-slate-500 mb-1">
+                  Valor total (travado)
+                </p>
+                <p className="text-xl font-black text-slate-800 dark:text-slate-100">
+                  R${" "}
+                  {contractModal.quote.toLocaleString("pt-BR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">
+                    Data inicial
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-brand-500 outline-none"
+                    value={contractModal.paymentDate}
+                    onChange={(event) =>
+                      setContractModal((current) =>
+                        current
+                          ? { ...current, paymentDate: event.target.value }
+                          : current,
+                      )
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">
+                    Entrada (opcional)
+                  </label>
+                  <div className="flex gap-2 mb-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setContractModal((current) => {
+                          if (!current) return current;
+                          const entryPercent =
+                            current.quote > 0
+                              ? Number(
+                                  ((current.entryAmount / current.quote) * 100).toFixed(
+                                    2,
+                                  ),
+                                )
+                              : 0;
+                          setPercentInput(entryPercent.toString());
+                          return {
+                            ...current,
+                            entryMode: "value",
+                            entryPercent,
+                          };
+                        })
+                      }
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${contractModal.entryMode === "value" ? "bg-brand-600 text-white border-brand-600" : "border-slate-300 text-slate-600"}`}
+                    >
+                      Valor
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setContractModal((current) => {
+                          if (!current) return current;
+                          const entryPercent =
+                            current.quote > 0
+                              ? Number(
+                                  ((current.entryAmount / current.quote) * 100).toFixed(
+                                    2,
+                                  ),
+                                )
+                              : 0;
+                          setPercentInput(entryPercent.toString());
+                          return {
+                            ...current,
+                            entryMode: "percent",
+                            entryPercent,
+                          };
+                        })
+                      }
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${contractModal.entryMode === "percent" ? "bg-brand-600 text-white border-brand-600" : "border-slate-300 text-slate-600"}`}
+                    >
+                      Porcentagem
+                    </button>
+                  </div>
+
+                  {contractModal.entryMode === "value" ? (
+                    <div className="relative">
+                      <span className="absolute left-3 top-3 text-slate-400 text-sm">
+                        R$
+                      </span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        className="w-full pl-8 p-3 border border-slate-300 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-brand-500 outline-none"
+                        placeholder="0,00"
+                        value={formatCurrencyBR(contractModal.entryAmount)}
+                        onFocus={(event) => event.currentTarget.select()}
+                        onChange={(event) => {
+                          const parsed = parseCurrencyBR(event.target.value);
+                          setContractModal((current) => {
+                            if (!current) return current;
+                            const boundedAmount = Math.min(parsed, current.quote);
+                            const nextPercent =
+                              current.quote > 0
+                                ? Number(
+                                    ((boundedAmount / current.quote) * 100).toFixed(2),
+                                  )
+                                : 0;
+                            setPercentInput(nextPercent.toString());
+                            return {
+                              ...current,
+                              entryAmount: boundedAmount,
+                              entryPercent: nextPercent,
+                            };
+                          });
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        className="w-full p-3 pr-8 border border-slate-300 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-brand-500 outline-none"
+                        placeholder="0"
+                        value={percentInput}
+                        onFocus={(event) => {
+                          if (percentInput === "0") setPercentInput("");
+                          event.currentTarget.select();
+                        }}
+                        onBlur={() => {
+                          const raw = percentInput.replace(",", ".");
+                          if (!raw.trim()) {
+                            setPercentInput("0");
+                            setContractModal((current) =>
+                              current
+                                ? { ...current, entryPercent: 0, entryAmount: 0 }
+                                : current,
+                            );
+                            return;
+                          }
+
+                          const parsed = Number(raw);
+                          const boundedPercent =
+                            Number.isFinite(parsed) && parsed >= 0
+                              ? Math.min(parsed, 100)
+                              : 0;
+                          setPercentInput(boundedPercent.toString());
+                        }}
+                        onChange={(event) => {
+                          const raw = event.target.value;
+                          const normalized = raw.replace(",", ".");
+                          if (!/^\d*(\.\d{0,2})?$/.test(normalized)) return;
+
+                          setPercentInput(raw);
+
+                          if (!normalized) {
+                            setContractModal((current) =>
+                              current
+                                ? { ...current, entryPercent: 0, entryAmount: 0 }
+                                : current,
+                            );
+                            return;
+                          }
+
+                          const parsed = Number(normalized);
+                          const boundedPercent =
+                            Number.isFinite(parsed) && parsed >= 0
+                              ? Math.min(parsed, 100)
+                              : 0;
+                          setContractModal((current) => {
+                            if (!current) return current;
+                            return {
+                              ...current,
+                              entryPercent: boundedPercent,
+                              entryAmount: Number(
+                                ((current.quote * boundedPercent) / 100).toFixed(2),
+                              ),
+                            };
+                          });
+                        }}
+                      />
+                      <span className="absolute right-3 top-3 text-slate-400 text-sm">
+                        %
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">
+                    Quantidade de parcelas
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-brand-500 outline-none"
+                    value={installmentsInput}
+                    onFocus={(event) => {
+                      if (installmentsInput === "1") setInstallmentsInput("");
+                      event.currentTarget.select();
+                    }}
+                    onBlur={() => {
+                      if (!installmentsInput.trim()) {
+                        setInstallmentsInput("1");
+                        setContractModal((current) =>
+                          current ? { ...current, installments: 1 } : current,
+                        );
+                        return;
+                      }
+
+                      const parsed = Number(installmentsInput);
+                      const normalized =
+                        Number.isFinite(parsed) && parsed > 0
+                          ? Math.min(36, Math.floor(parsed))
+                          : 1;
+
+                      setInstallmentsInput(String(normalized));
+                      setContractModal((current) =>
+                        current
+                          ? {
+                              ...current,
+                              installments: normalized,
+                            }
+                          : current,
+                      );
+                    }}
+                    onChange={(event) => {
+                      const raw = event.target.value.replace(/\D/g, "");
+                      setInstallmentsInput(raw);
+
+                      if (!raw) return;
+
+                      const parsed = Number(raw);
+                      if (!Number.isFinite(parsed) || parsed <= 0) return;
+
+                      setContractModal((current) =>
+                        current
+                          ? {
+                              ...current,
+                              installments: Math.min(36, Math.floor(parsed)),
+                            }
+                          : current,
+                      );
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-xl bg-sky-50 dark:bg-slate-800 border border-sky-100 dark:border-slate-700 p-3 text-xs text-sky-900 dark:text-slate-200 space-y-1">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-sky-700 dark:text-slate-300">
+                  Resumo do parcelamento
+                </p>
+                <p>
+                  Valor restante: R${" "}
+                  {Math.max(0, contractModal.quote - modalEntryAmount).toLocaleString(
+                    "pt-BR",
+                    {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                    },
+                  )}
+                </p>
+                <p>
+                  Parcela estimada: R${" "}
+                  {(
+                    Math.max(0, contractModal.quote - modalEntryAmount) /
+                    Math.max(1, contractModal.installments)
+                  ).toLocaleString("pt-BR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </p>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={closeContractModal}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmContractWithPlan}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700"
+                >
+                  Confirmar contratação
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };

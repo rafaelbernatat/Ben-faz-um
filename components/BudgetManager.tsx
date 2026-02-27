@@ -108,8 +108,6 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({ data, onUpdate }) => {
             {
               id: crypto.randomUUID(),
               description: "Nova Tarefa",
-              budgeted: 0,
-              spent: 0,
               notes: "",
               status: TaskStatus.TODO,
             },
